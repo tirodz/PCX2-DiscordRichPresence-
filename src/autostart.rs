@@ -79,25 +79,47 @@ pub fn install() -> anyhow::Result<()> {
 pub fn uninstall() -> anyhow::Result<()> {
     windows::uninstall()?;
     request_stop()?;
-    std::thread::sleep(std::time::Duration::from_secs(10));
+
+    let pid_path = control_path(".pid")?;
+    if pid_path.exists() {
+        for _ in 0..40 {
+            if !pid_path.exists() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(250));
+        }
+    }
+
     Ok(())
+}
+
+fn control_path(name: &str) -> anyhow::Result<std::path::PathBuf> {
+    Ok(std::env::current_exe()?
+        .parent()
+        .map(|p| p.join(name))
+        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))?)
 }
 
 pub fn request_stop() -> anyhow::Result<()> {
-    let path = std::env::current_exe()?
-        .parent()
-        .map(|p| p.join(".stop"))
-        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))?;
-    std::fs::write(path, b"stop")?;
+    std::fs::write(control_path(".stop")?, b"stop")?;
     Ok(())
 }
 
+pub fn write_pid() -> anyhow::Result<()> {
+    std::fs::write(control_path(".pid")?, std::process::id().to_string())?;
+    Ok(())
+}
+
+pub fn clear_pid() -> anyhow::Result<()> {
+    match std::fs::remove_file(control_path(".pid")?) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
+    }
+}
+
 pub fn clear_stop_request() -> anyhow::Result<()> {
-    let path = std::env::current_exe()?
-        .parent()
-        .map(|p| p.join(".stop"))
-        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))?;
-    match std::fs::remove_file(path) {
+    match std::fs::remove_file(control_path(".stop")?) {
         Ok(()) => Ok(()),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(error) => Err(error.into()),
@@ -105,11 +127,7 @@ pub fn clear_stop_request() -> anyhow::Result<()> {
 }
 
 pub fn stop_requested() -> anyhow::Result<bool> {
-    let path = std::env::current_exe()?
-        .parent()
-        .map(|p| p.join(".stop"))
-        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))?;
-    Ok(path.exists())
+    Ok(control_path(".stop")?.exists())
 }
 
 pub fn installed() -> anyhow::Result<bool> {
