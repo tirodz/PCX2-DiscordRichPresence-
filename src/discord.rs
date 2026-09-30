@@ -10,7 +10,7 @@ use crate::metadata::CoverCache;
 use crate::state::{unix_now, RuntimeState};
 
 const PCSX2_LOGO: &str =
-    "https://raw.githubusercontent.com/PCSX2/pcsx2/master/pcsx2/Icons/pcsx2.svg";
+    "https://raw.githubusercontent.com/PCSX2/pcsx2/master/bin/resources/icons/AppIconLarge.png";
 
 pub struct DiscordPublisher {
     client_id: String,
