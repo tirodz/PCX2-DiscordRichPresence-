@@ -122,7 +122,6 @@ impl PineClient {
 
 #[cfg(test)]
 mod tests {
-    
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::thread;
@@ -154,7 +153,10 @@ mod tests {
         let server = thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
 
-            for (index, expected_opcode) in [0x0F_u8, 0x0B, 0x0C, 0x0D, 0x0E].iter().enumerate() {
+            for (index, expected_opcode) in [0x0F_u8, 0x0B, 0x0C, 0x0D, 0x0E]
+                .iter()
+                .enumerate()
+            {
                 let mut header = [0u8; 4];
                 stream.read_exact(&mut header).unwrap();
                 assert_eq!(u32::from_le_bytes(header), 5);
