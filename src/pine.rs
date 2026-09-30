@@ -33,7 +33,9 @@ impl PineClient {
         let address = (host, port)
             .to_socket_addrs()?
             .next()
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no address"))?;
+            .ok_or_else(|| {
+                std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no address")
+            })?;
 
         let stream = TcpStream::connect_timeout(&address, Duration::from_millis(500))?;
         stream.set_read_timeout(Some(Duration::from_millis(750)))?;
@@ -69,10 +71,12 @@ impl PineClient {
         if response.len() < 9 {
             return Err(PineError::InvalidResponse);
         }
+
         let text_len = u32::from_le_bytes(response[1..5].try_into().unwrap()) as usize;
         if text_len == 0 || 5 + text_len > response.len() {
             return Err(PineError::InvalidResponse);
         }
+
         let bytes = &response[5..5 + text_len];
         let end = bytes.iter().position(|b| *b == 0).unwrap_or(bytes.len());
         Ok(String::from_utf8(bytes[..end].to_vec())?)
@@ -99,7 +103,9 @@ impl PineClient {
         let version = self.text(MSG_GAME_VERSION).unwrap_or_default().trim().to_string();
 
         if title.is_empty() && serial.is_empty() {
-            return Ok(RuntimeState::Bios { paused: status == 1 });
+            return Ok(RuntimeState::Bios {
+                paused: status == 1,
+            });
         }
 
         Ok(RuntimeState::Game {
