@@ -77,7 +77,37 @@ pub fn install() -> anyhow::Result<()> {
 }
 
 pub fn uninstall() -> anyhow::Result<()> {
-    windows::uninstall()
+    windows::uninstall()?;
+    request_stop()
+}
+
+pub fn request_stop() -> anyhow::Result<()> {
+    let path = std::env::current_exe()?
+        .parent()
+        .map(|p| p.join(".stop"))
+        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))?;
+    std::fs::write(path, b"stop")?;
+    Ok(())
+}
+
+pub fn clear_stop_request() -> anyhow::Result<()> {
+    let path = std::env::current_exe()?
+        .parent()
+        .map(|p| p.join(".stop"))
+        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))?;
+    match std::fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
+    }
+}
+
+pub fn stop_requested() -> anyhow::Result<bool> {
+    let path = std::env::current_exe()?
+        .parent()
+        .map(|p| p.join(".stop"))
+        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))?;
+    Ok(path.exists())
 }
 
 pub fn installed() -> anyhow::Result<bool> {
