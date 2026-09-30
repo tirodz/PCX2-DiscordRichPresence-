@@ -29,4 +29,12 @@ Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--install"; Flags: runhidden nowait skipifsilent
 
 [UninstallRun]
-Filename: "{app}\{#MyAppExeName}"; Parameters: "--uninstall"; Flags: runhidden
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--uninstall"; Flags: runhidden skipifdoesntexist
+
+[UninstallDelete]
+Type: files
+Name: "{app}\config.toml"
+Type: files
+Name: "{app}\.stop"
+Type: files
+Name: "{app}\.pid"
