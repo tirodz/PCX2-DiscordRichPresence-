@@ -42,18 +42,21 @@ impl PineClient {
     }
 
     fn command(&mut self, opcode: u8) -> Result<Vec<u8>, PineError> {
-        let length = 1u32.to_le_bytes();
+        // PINE's frame length includes its four-byte length prefix.
+        let length = 5u32.to_le_bytes();
         self.stream.write_all(&length)?;
         self.stream.write_all(&[opcode])?;
 
         let mut header = [0u8; 4];
         self.stream.read_exact(&mut header)?;
-        let response_len = u32::from_le_bytes(header) as usize;
-        if !(5..=1024 * 1024).contains(&response_len) {
+        let total_len = u32::from_le_bytes(header) as usize;
+        if !(5..=1024 * 1024).contains(&total_len) {
             return Err(PineError::InvalidResponse);
         }
 
-        let mut response = vec![0u8; response_len];
+        // The four-byte length header has already been consumed.
+        let payload_len = total_len - 4;
+        let mut response = vec![0u8; payload_len];
         self.stream.read_exact(&mut response)?;
         if response.first().copied() != Some(0) {
             return Err(PineError::Failure);
