@@ -59,12 +59,14 @@ fn main() -> Result<()> {
 
 fn run() -> Result<()> {
     autostart::clear_stop_request()?;
+    autostart::clear_pid()?;
     let config = Config::load_or_create()?;
 
     if config.discord.client_id.trim().is_empty() {
         return Ok(());
     }
 
+    autostart::write_pid()?;
     let covers = CoverCache::new()?;
     let mut discord = DiscordPublisher::new(config.discord.client_id.clone());
     let mut previous = RuntimeState::Offline;
@@ -72,6 +74,7 @@ fn run() -> Result<()> {
     loop {
         if autostart::stop_requested()? {
             let _ = discord.clear();
+            let _ = autostart::clear_pid();
             return Ok(());
         }
 
