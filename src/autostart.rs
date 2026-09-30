@@ -78,7 +78,9 @@ pub fn install() -> anyhow::Result<()> {
 
 pub fn uninstall() -> anyhow::Result<()> {
     windows::uninstall()?;
-    request_stop()
+    request_stop()?;
+    std::thread::sleep(std::time::Duration::from_secs(10));
+    Ok(())
 }
 
 pub fn request_stop() -> anyhow::Result<()> {
