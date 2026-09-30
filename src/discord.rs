@@ -9,7 +9,7 @@ use discord_rich_presence::{
 use crate::metadata::CoverCache;
 use crate::state::{unix_now, RuntimeState};
 
-const PCSX2_LOGO =
+const PCSX2_LOGO: &str =
     "https://raw.githubusercontent.com/PCSX2/pcsx2/master/pcsx2/Icons/pcsx2.svg";
 
 pub struct DiscordPublisher {
@@ -18,6 +18,7 @@ pub struct DiscordPublisher {
     last_signature: String,
     last_publish: Option<Instant>,
     session_start: Option<i64>,
+    game_identity: Option<String>,
 }
 
 impl DiscordPublisher {
@@ -28,6 +29,7 @@ impl DiscordPublisher {
             last_signature: String::new(),
             last_publish: None,
             session_start: None,
+            game_identity: None,
         }
     }
 
@@ -54,35 +56,49 @@ impl DiscordPublisher {
             return Ok(());
         }
 
+        if matches!(state, RuntimeState::Offline) {
+            return self.clear();
+        }
+
         self.ensure_connected()?;
 
         let (details, state_text, cover, timestamp) = match state {
-            RuntimeState::Idle => (
-                "PCSX2".to_string(),
-                "At the Main Menu".to_string(),
-                None,
-                None,
-            ),
-            RuntimeState::Bios { paused } => (
-                "PlayStation 2".to_string(),
-                if *paused {
-                    "System Menu · Paused".to_string()
-                } else {
-                    "System Menu".to_string()
-                },
-                None,
-                None,
-            ),
+            RuntimeState::Idle => {
+                self.reset_game_session();
+                (
+                    "PCSX2".to_string(),
+                    "At the Main Menu".to_string(),
+                    None,
+                    None,
+                )
+            }
+            RuntimeState::Bios { paused } => {
+                self.reset_game_session();
+                (
+                    "PlayStation 2".to_string(),
+                    if *paused {
+                        "System Menu · Paused".to_string()
+                    } else {
+                        "System Menu".to_string()
+                    },
+                    None,
+                    None,
+                )
+            }
             RuntimeState::Game {
                 title,
                 serial,
+                crc,
+                version,
                 paused,
-                ..
             } => {
-                let cover = covers.cover_url(serial).ok().flatten();
-                if self.session_start.is_none() || signature != self.last_signature {
+                let identity = format!("{title}\u{1f}{serial}\u{1f}{crc}\u{1f}{version}");
+                if self.game_identity.as_deref() != Some(identity.as_str()) {
+                    self.game_identity = Some(identity);
                     self.session_start = Some(unix_now());
                 }
+
+                let cover = covers.cover_url(serial).ok().flatten();
                 (
                     title.clone(),
                     if *paused {
@@ -94,7 +110,7 @@ impl DiscordPublisher {
                     self.session_start,
                 )
             }
-            RuntimeState::Offline => return self.clear(),
+            RuntimeState::Offline => unreachable!(),
         };
 
         let mut activity = Activity::new().details(&details).state(&state_text);
@@ -123,15 +139,21 @@ impl DiscordPublisher {
         Ok(())
     }
 
+    fn reset_game_session(&mut self) {
+        self.game_identity = None;
+        self.session_start = None;
+    }
+
     pub fn clear(&mut self) -> Result<()> {
         if let Some(client) = self.client.as_mut() {
             let _ = client.clear_activity();
             let _ = client.close();
         }
+
         self.client = None;
         self.last_signature.clear();
         self.last_publish = None;
-        self.session_start = None;
+        self.reset_game_session();
         Ok(())
     }
 }
