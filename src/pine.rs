@@ -122,6 +122,74 @@ impl PineClient {
 
 #[cfg(test)]
 mod tests {
+    
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use std::thread;
+
+    use super::PineClient;
+    use crate::state::RuntimeState;
+
+    fn send_response(stream: &mut std::net::TcpStream, payload: &[u8]) {
+        let total_len = (4 + payload.len()) as u32;
+        stream.write_all(&total_len.to_le_bytes()).unwrap();
+        stream.write_all(payload).unwrap();
+    }
+
+    fn send_text(stream: &mut std::net::TcpStream, value: &str) {
+        let bytes = value.as_bytes();
+        let mut payload = Vec::with_capacity(5 + bytes.len() + 1);
+        payload.push(0);
+        payload.extend_from_slice(&((bytes.len() + 1) as u32).to_le_bytes());
+        payload.extend_from_slice(bytes);
+        payload.push(0);
+        send_response(stream, &payload);
+    }
+
+    #[test]
+    fn reads_game_state_from_pine() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+
+            for (index, expected_opcode) in [0x0F_u8, 0x0B, 0x0C, 0x0D, 0x0E].iter().enumerate() {
+                let mut header = [0u8; 4];
+                stream.read_exact(&mut header).unwrap();
+                assert_eq!(u32::from_le_bytes(header), 5);
+
+                let mut opcode = [0u8; 1];
+                stream.read_exact(&mut opcode).unwrap();
+                assert_eq!(opcode[0], *expected_opcode);
+
+                match index {
+                    0 => send_response(&mut stream, &[0, 0, 0, 0, 0]),
+                    1 => send_text(&mut stream, "Grand Theft Auto: San Andreas"),
+                    2 => send_text(&mut stream, "SLUS-20946"),
+                    3 => send_text(&mut stream, "1234abcd"),
+                    4 => send_text(&mut stream, "1.00"),
+                    _ => unreachable!(),
+                }
+            }
+        });
+
+        let mut client = PineClient::connect("127.0.0.1", port).unwrap();
+        let state = client.read_state().unwrap();
+
+        assert_eq!(
+            state,
+            RuntimeState::Game {
+                title: "Grand Theft Auto: San Andreas".into(),
+                serial: "SLUS-20946".into(),
+                crc: "1234abcd".into(),
+                version: "1.00".into(),
+                paused: false,
+            }
+        );
+
+        server.join().unwrap();
+    }
     #[test]
     fn pine_status_values_are_stable() {
         assert_eq!(0u32, 0); // Running
