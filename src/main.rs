@@ -1,3 +1,6 @@
+#![cfg_attr(windows, windows_subsystem = "windows")]
+
+mod autostart;
 mod config;
 mod discord;
 mod metadata;
@@ -16,11 +19,47 @@ use pine::PineClient;
 use state::RuntimeState;
 
 fn main() -> Result<()> {
+    match std::env::args().nth(1).as_deref() {
+        Some("--install") => {
+            autostart::install()?;
+            return Ok(());
+        }
+        Some("--uninstall") => {
+            autostart::uninstall()?;
+            return Ok(());
+        }
+        Some("--status") => {
+            println!(
+                "Automatic startup: {}",
+                if autostart::installed()? {
+                    "enabled"
+                } else {
+                    "disabled"
+                }
+            );
+            return Ok(());
+        }
+        Some("--background") | None => {}
+        Some("--help") | Some("-h") => {
+            println!("PCSX2 Discord Rich Presence");
+            println!();
+            println!("  --install    Start automatically when Windows logs in");
+            println!("  --uninstall  Remove automatic startup");
+            println!("  --status     Show automatic startup status");
+            return Ok(());
+        }
+        Some(argument) => {
+            anyhow::bail!("unknown argument: {argument}");
+        }
+    }
+
+    run()
+}
+
+fn run() -> Result<()> {
     let config = Config::load_or_create()?;
 
     if config.discord.client_id.trim().is_empty() {
-        eprintln!("Discord client ID is not configured.");
-        eprintln!("Set [discord] client_id in config.toml and run again.");
         return Ok(());
     }
 
