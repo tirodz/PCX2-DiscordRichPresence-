@@ -22,6 +22,7 @@ fn main() -> Result<()> {
     match std::env::args().nth(1).as_deref() {
         Some("--install") => {
             autostart::install()?;
+            autostart::clear_stop_request()?;
             return Ok(());
         }
         Some("--uninstall") => {
@@ -57,6 +58,7 @@ fn main() -> Result<()> {
 }
 
 fn run() -> Result<()> {
+    autostart::clear_stop_request()?;
     let config = Config::load_or_create()?;
 
     if config.discord.client_id.trim().is_empty() {
@@ -68,6 +70,11 @@ fn run() -> Result<()> {
     let mut previous = RuntimeState::Offline;
 
     loop {
+        if autostart::stop_requested()? {
+            let _ = discord.clear();
+            return Ok(());
+        }
+
         match PineClient::connect(&config.pine.host, config.pine.port) {
             Ok(mut pine) => match pine.read_state() {
                 Ok(current) => {
