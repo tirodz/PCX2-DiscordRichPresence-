@@ -68,7 +68,7 @@ impl PineClient {
 
     fn text(&mut self, opcode: u8) -> Result<String, PineError> {
         let response = self.command(opcode)?;
-        if response.len() < 9 {
+        if response.len() < 5 {
             return Err(PineError::InvalidResponse);
         }
 
@@ -93,8 +93,10 @@ impl PineClient {
     pub fn read_state(&mut self) -> Result<RuntimeState, PineError> {
         let status = self.status()?;
 
-        if status == 2 {
-            return Ok(RuntimeState::Idle);
+        match status {
+            0 | 1 => {}
+            2 => return Ok(RuntimeState::Idle),
+            _ => return Err(PineError::InvalidResponse),
         }
 
         let title = self.text(MSG_TITLE).unwrap_or_default().trim().to_string();
