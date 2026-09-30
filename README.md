@@ -1,58 +1,93 @@
 # PCSX2 Discord Rich Presence
 
-Automatic Discord Rich Presence for PCSX2.
+A small Windows helper that connects PCSX2 to Discord Rich Presence through PCSX2's native PINE interface.
 
-The project is designed around PCSX2's native PINE IPC interface rather than window-title scraping or emulator injection.
+The goal is to make it feel like part of PCSX2: start PCSX2, and the Discord activity follows it without having to launch an RPC program every time.
 
-## Goals
+## What it does
 
-- PCSX2 idle/menu presence
-- PS2 BIOS/system-menu presence
-- Serial-aware game identification
-- Game title and PS2 cover artwork
-- Playing and paused states
-- Accurate elapsed-play timestamps
-- Local cover caching
-- Discord reconnect handling
-- One-time setup with no manual RPC launch for every session
-- Lightweight Windows distribution
+- Shows an idle PCSX2 activity while the emulator is sitting at its main menu
+- Detects the PS2 system menu/BIOS state
+- Reads the game title, serial, CRC and version through PINE
+- Finds PS2 cover art from the serial and uses it in Discord
+- Shows playing and paused states
+- Keeps the elapsed timer tied to the game session instead of resetting on pause/resume
+- Caches downloaded covers locally
+- Reconnects cleanly when Discord or PCSX2 goes away
+- Can be installed once to start automatically with Windows
+- Runs without an extra visible helper window
 
-## Current status
+## How it works
 
-Foundation implementation is in place:
+PCX2-DiscordRichPresence does not scrape the PCSX2 window or inject code into the emulator.
 
-- Native PINE TCP client
-- Explicit idle/BIOS/game/paused state model
-- Serial-based PS2 cover lookup and cache
-- Lazy Discord IPC publisher
-- Discord external image URLs
-- Windows CI/test/release build
+The helper talks to the PINE TCP server on `127.0.0.1:28011`, turns the emulator's status and metadata into a small state machine, resolves cover art from the game serial, and publishes the result through Discord IPC.
 
-The automatic Windows lifecycle integration is the next major implementation step.
+When PINE is unavailable, the Discord activity is cleared. The helper stays in the background so the next PCSX2 launch is picked up automatically.
 
 ## Setup
 
-PCSX2 must have PINE enabled. The default Windows PINE slot is 28011.
+### 1. Enable PINE in PCSX2
 
-The first run creates a config.toml next to the executable. Put the Discord application client ID under:
+Enable the PINE server in PCSX2. The default Windows slot is `28011`.
+
+### 2. Create a Discord application
+
+Create a Discord application and copy its Application ID (Client ID). This is an application identifier, not your Discord account token.
+
+Put it in `config.toml` next to the executable:
+
+```toml
+[pine]
+host = "127.0.0.1"
+port = 28011
 
 [discord]
 client_id = "YOUR_DISCORD_APPLICATION_ID"
 
-The client ID is not a Discord account token.
+poll_seconds = 2
+retry_seconds = 3
+```
+
+### 3. Install automatic startup
+
+Run the executable once with:
+
+```text
+pcsx2-discord-rich-presence.exe --install
+```
+
+That adds a per-user Windows startup entry. No administrator privileges are needed.
+
+Useful commands:
+
+```text
+--install      enable automatic startup
+--uninstall    remove automatic startup
+--status       check the startup entry
+--help         show the available commands
+```
+
+After that, the normal flow is simply:
+
+**PCSX2 starts → PINE becomes available → Discord presence appears → game/paused/menu state follows → PCSX2 closes → presence clears.**
 
 ## Development
 
 Use a current stable Rust toolchain:
 
+```text
 cargo fmt --all -- --check
 cargo test --all-targets
 cargo clippy --all-targets --all-features -- -D warnings
 cargo build --release
+```
+
+GitHub Actions runs the formatting, tests, Clippy and Windows release build on pushes and pull requests.
 
 ## References
 
 - PCSX2 PINE: https://github.com/PCSX2/pcsx2/blob/master/pcsx2/PINE.cpp
-- PINE reference implementation: https://github.com/GovanifY/pine
-- PS2 covers: https://github.com/xlenore/ps2-covers
-- Extreme-InfiniTV Discord implementation: https://github.com/infinitel8p/Extreme-InfiniTV
+- PINE reference client: https://github.com/GovanifY/pine
+- PS2 cover database: https://github.com/xlenore/ps2-covers
+- Extreme-InfiniTV: https://github.com/infinitel8p/Extreme-InfiniTV
