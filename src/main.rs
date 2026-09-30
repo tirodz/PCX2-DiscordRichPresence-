@@ -30,36 +30,35 @@ fn main() -> Result<()> {
 
     loop {
         match PineClient::connect(&config.pine.host, config.pine.port) {
-            Ok(mut pine) => {
-                match pine.read_state() {
-                    Ok(current) => {
-                        if current != previous {
-                            if let Err(error) = discord.publish(&current, &covers) {
-                                eprintln!("Discord presence update failed: {error:#}");
-                            }
-                            previous = current;
-                        } else if let Err(error) = discord.publish(&current, &covers) {
-                            eprintln!("Discord presence refresh failed: {error:#}");
+            Ok(mut pine) => match pine.read_state() {
+                Ok(current) => {
+                    if current != previous {
+                        if let Err(error) = discord.publish(&current, &covers) {
+                            eprintln!("Discord presence update failed: {error:#}");
                         }
-                    }
-                    Err(error) => {
-                        eprintln!("PINE query failed: {error}");
-                        if previous != RuntimeState::Offline {
-                            let _ = discord.clear();
-                            previous = RuntimeState::Offline;
-                        }
+                        previous = current;
+                    } else if let Err(error) = discord.publish(&current, &covers) {
+                        eprintln!("Discord presence refresh failed: {error:#}");
                     }
                 }
-
-                thread::sleep(Duration::from_secs(config.poll_seconds.max(1)));
-            }
+                Err(error) => {
+                    eprintln!("PINE query failed: {error}");
+                    if previous != RuntimeState::Offline {
+                        let _ = discord.clear();
+                        previous = RuntimeState::Offline;
+                    }
+                }
+            },
             Err(_) => {
                 if previous != RuntimeState::Offline {
                     let _ = discord.clear();
                     previous = RuntimeState::Offline;
                 }
                 thread::sleep(Duration::from_secs(config.retry_seconds.max(1)));
+                continue;
             }
         }
+
+        thread::sleep(Duration::from_secs(config.poll_seconds.max(1)));
     }
 }
