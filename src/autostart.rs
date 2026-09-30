@@ -34,7 +34,9 @@ mod windows {
         };
 
         match key.delete_value(VALUE_NAME) {
-            Ok(()) | Err(_) => Ok(()),
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(error).context("removing PCSX2 Discord Rich Presence from startup"),
         }
     }
 
