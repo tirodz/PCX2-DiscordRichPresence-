@@ -32,8 +32,8 @@ A missing cover never prevents the text presence from being published.
 
 ## Automatic lifecycle
 
-The current repository foundation intentionally does not install a permanent startup task yet.
+Windows setup is handled with a per-user startup entry. The helper starts silently at logon, waits for PCSX2's PINE endpoint, and does not connect to Discord until there is emulator state to publish.
 
-The final Windows release must satisfy the product requirement that users do not manually launch a second program for every PCSX2 session. The next implementation layer will establish a one-time Windows integration that starts the presence helper when PCSX2 starts and stops it when PCSX2 exits.
+When PCSX2 closes, PINE becomes unreachable and the helper clears the Discord activity. It remains resident in the background so a later PCSX2 launch is picked up without another manual launch.
 
-Potential mechanisms include Windows Task Scheduler event triggers or a minimal hidden watcher. The chosen implementation must be tested for reliability and clean uninstall/removal.
+The startup entry can be removed with `--uninstall`. No administrator privileges or Windows service are required.
