@@ -291,7 +291,6 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
             *line = replacement;
             return lines.concat();
         }
-
     }
 
     let setting = format!("{} = {}{}", key, value, newline);
