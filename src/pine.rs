@@ -37,9 +37,9 @@ impl PineClient {
                 std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no address")
             })?;
 
-        let stream = TcpStream::connect_timeout(&address, Duration::from_millis(500))?;
-        stream.set_read_timeout(Some(Duration::from_millis(750)))?;
-        stream.set_write_timeout(Some(Duration::from_millis(750)))?;
+        let stream = TcpStream::connect_timeout(&address, Duration::from_millis(1000))?;
+        stream.set_read_timeout(Some(Duration::from_millis(1500)))?;
+        stream.set_write_timeout(Some(Duration::from_millis(1500)))?;
         Ok(Self { stream })
     }
 
@@ -83,11 +83,13 @@ impl PineClient {
     }
 
     fn status(&mut self) -> Result<u32, PineError> {
+        // Reply layout after the length prefix: one result byte, then the
+        // u32 emulator status (Running = 0, Paused = 1, Shutdown = 2).
         let response = self.command(MSG_STATUS)?;
-        if response.len() < 9 {
+        if response.len() < 5 {
             return Err(PineError::InvalidResponse);
         }
-        Ok(u32::from_le_bytes(response[5..9].try_into().unwrap()))
+        Ok(u32::from_le_bytes(response[1..5].try_into().unwrap()))
     }
 
     pub fn read_state(&mut self) -> Result<RuntimeState, PineError> {
@@ -197,5 +199,167 @@ mod tests {
         assert_eq!(0u32, 0); // Running
         assert_eq!(1u32, 1); // Paused
         assert_eq!(2u32, 2); // Shutdown
+    }
+
+    fn send_status(stream: &mut std::net::TcpStream, status: u32) {
+        let mut payload = vec![0u8];
+        payload.extend_from_slice(&status.to_le_bytes());
+        send_response(stream, &payload);
+    }
+
+    fn send_fail(stream: &mut std::net::TcpStream) {
+        send_response(stream, &[0xFF]);
+    }
+
+    fn read_request(stream: &mut std::net::TcpStream) -> u8 {
+        let mut header = [0u8; 4];
+        stream.read_exact(&mut header).unwrap();
+        assert_eq!(u32::from_le_bytes(header), 5);
+        let mut opcode = [0u8; 1];
+        stream.read_exact(&mut opcode).unwrap();
+        opcode[0]
+    }
+
+    #[test]
+    fn shutdown_status_maps_to_idle() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            assert_eq!(read_request(&mut stream), 0x0F);
+            send_status(&mut stream, 2);
+        });
+
+        let mut client = PineClient::connect("127.0.0.1", port).unwrap();
+        assert_eq!(client.read_state().unwrap(), RuntimeState::Idle);
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn paused_status_maps_to_paused_game() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            assert_eq!(read_request(&mut stream), 0x0F);
+            send_status(&mut stream, 1);
+            assert_eq!(read_request(&mut stream), 0x0B);
+            send_text(&mut stream, "Gran Turismo 4");
+            assert_eq!(read_request(&mut stream), 0x0C);
+            send_text(&mut stream, "SCES-51719");
+            assert_eq!(read_request(&mut stream), 0x0D);
+            send_text(&mut stream, "77e61c8a");
+            assert_eq!(read_request(&mut stream), 0x0E);
+            send_text(&mut stream, "1.00");
+        });
+
+        let mut client = PineClient::connect("127.0.0.1", port).unwrap();
+        let state = client.read_state().unwrap();
+        assert_eq!(
+            state,
+            RuntimeState::Game {
+                title: "Gran Turismo 4".into(),
+                serial: "SCES-51719".into(),
+                crc: "77e61c8a".into(),
+                version: "1.00".into(),
+                paused: true,
+            }
+        );
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn running_vm_without_metadata_maps_to_bios() {
+        // PCSX2 fails the title/serial requests when the VM has no game
+        // metadata, which is what the PS2 system menu looks like.
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            assert_eq!(read_request(&mut stream), 0x0F);
+            send_status(&mut stream, 0);
+            for expected in [0x0B_u8, 0x0C, 0x0D, 0x0E] {
+                assert_eq!(read_request(&mut stream), expected);
+                send_fail(&mut stream);
+            }
+        });
+
+        let mut client = PineClient::connect("127.0.0.1", port).unwrap();
+        assert_eq!(client.read_state().unwrap(), RuntimeState::Bios { paused: false });
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn rejects_implausible_length_prefix() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let _ = read_request(&mut stream);
+            // A length prefix below the minimum frame size is malformed.
+            stream.write_all(&2u32.to_le_bytes()).unwrap();
+            stream.write_all(&[0u8; 8]).unwrap();
+        });
+
+        let mut client = PineClient::connect("127.0.0.1", port).unwrap();
+        assert!(client.read_state().is_err());
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn survives_connection_reset_mid_reply() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            // Drop the connection without answering, like PCSX2 closing.
+            drop(stream);
+        });
+
+        let mut client = PineClient::connect("127.0.0.1", port).unwrap();
+        assert!(client.read_state().is_err());
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn handles_sequential_states_on_one_connection() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+
+            // First poll: PCSX2 open, no VM.
+            assert_eq!(read_request(&mut stream), 0x0F);
+            send_status(&mut stream, 2);
+
+            // Second poll: game running.
+            assert_eq!(read_request(&mut stream), 0x0F);
+            send_status(&mut stream, 0);
+            assert_eq!(read_request(&mut stream), 0x0B);
+            send_text(&mut stream, "Kingdom Hearts");
+            assert_eq!(read_request(&mut stream), 0x0C);
+            send_text(&mut stream, "SLUS-20370");
+            assert_eq!(read_request(&mut stream), 0x0D);
+            send_text(&mut stream, "c90c8f3d");
+            assert_eq!(read_request(&mut stream), 0x0E);
+            send_text(&mut stream, "1.00");
+        });
+
+        let mut client = PineClient::connect("127.0.0.1", port).unwrap();
+        assert_eq!(client.read_state().unwrap(), RuntimeState::Idle);
+        match client.read_state().unwrap() {
+            RuntimeState::Game { title, serial, .. } => {
+                assert_eq!(title, "Kingdom Hearts");
+                assert_eq!(serial, "SLUS-20370");
+            }
+            other => panic!("expected game state, got {other:?}"),
+        }
+        server.join().unwrap();
     }
 }

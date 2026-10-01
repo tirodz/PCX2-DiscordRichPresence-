@@ -38,8 +38,7 @@ impl DiscordPublisher {
             return Ok(());
         }
 
-        let mut client =
-            DiscordIpcClient::new(&self.client_id).context("creating Discord IPC client")?;
+        let mut client = DiscordIpcClient::new(&self.client_id);
         client.connect().context("connecting to Discord IPC")?;
         self.client = Some(client);
         Ok(())
@@ -113,11 +112,11 @@ impl DiscordPublisher {
             RuntimeState::Offline => unreachable!(),
         };
 
-        let mut activity = Activity::new().details(&details).state(&state_text);
+        let mut activity = Activity::new().details(details.clone()).state(state_text);
         let mut assets = Assets::new().small_image(PCSX2_LOGO).small_text("PCSX2");
 
         if let Some(url) = cover {
-            assets = assets.large_image(&url).large_text(&details);
+            assets = assets.large_image(url).large_text(details);
         } else {
             assets = assets.large_image(PCSX2_LOGO).large_text("PCSX2");
         }
