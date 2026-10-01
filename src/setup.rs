@@ -115,13 +115,18 @@ fn apply_setup(form: &FormState) -> Vec<StepResult> {
     results.push(("Disable PCSX2's built-in Discord presence", takeover));
 
     results.push((
-        "Save the configuration",
-        config.save().map_err(|e| format!("{e:#}")),
+        "Disable PCSX2's built-in Discord presence",
+        pcsx2::disable_builtin_discord(Path::new(&config.pcsx2.exe_path))
+            .map_err(|e| format!("could not disable PCSX2's built-in Discord presence: {e:#}")),
     ));
-    if results.get(results.len().saturating_sub(2)).map(|(_, r)| r.is_err()) == Some(true) {
+    if results.last().map(|(_, r)| r.is_err()) == Some(true) {
         return results;
     }
 
+    results.push((
+        "Save the configuration",
+        config.save().map_err(|e| format!("{e:#}")),
+    ));
     if results.last().map(|(_, r)| r.is_err()) == Some(true) {
         return results;
     }
