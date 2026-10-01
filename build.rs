@@ -16,11 +16,12 @@ fn main() {
     let pixels = icon::render_icon(256);
     let png = icon::png_rgba(256, 256, &pixels);
 
-    write_if_changed(&manifest_dir.join("assets/icon.png"), &png);
-    write_if_changed(
-        &manifest_dir.join("assets/icon.ico"),
-        &icon::ico_from_png(&png),
-    );
+    // Fresh clones have no assets directory (git only tracks files).
+    let assets = manifest_dir.join("assets");
+    std::fs::create_dir_all(&assets).expect("cannot create the assets directory");
+
+    write_if_changed(&assets.join("icon.png"), &png);
+    write_if_changed(&assets.join("icon.ico"), &icon::ico_from_png(&png));
 
     // Embed the icon in the Windows executable. The build script runs on
     // the host, so check the target explicitly.
