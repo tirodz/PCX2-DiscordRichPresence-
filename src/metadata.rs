@@ -127,7 +127,7 @@ pub fn normalize_serial(value: &str) -> String {
         }
     }
 
-    trimmed.replace(' ', "_").replace('/', "_")
+    trimmed.replace([' ', '/'], "_")
 }
 
 fn public_cover_url_from(base: &str, serial: &str) -> String {
