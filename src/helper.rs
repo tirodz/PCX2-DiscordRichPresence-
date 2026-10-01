@@ -24,7 +24,6 @@ pub fn run() -> Result<()> {
     logging::info("helper starting");
 
     autostart::clear_stop_request()?;
-    autostart::clear_pid()?;
 
     let config = Config::load_or_create()?;
     if config.discord.client_id.trim().is_empty() {
@@ -32,6 +31,8 @@ pub fn run() -> Result<()> {
         return Ok(());
     }
 
+    // Single-instance guard. A stale PID file from a crashed helper is fine:
+    // the liveness check fails and the file is overwritten below.
     if let Some(pid) = running_pid() {
         logging::info(&format!(
             "another helper instance is already running (pid {pid})"
