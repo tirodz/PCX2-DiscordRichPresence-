@@ -62,7 +62,7 @@ impl CoverCache {
             return Ok(Some(discord_cover_url(&public_cover_url_from(
                 base,
                 &normalized,
-            ))));
+            ))?));
         }
 
         let missing_file = self.root.join(format!("{normalized}.missing"));
