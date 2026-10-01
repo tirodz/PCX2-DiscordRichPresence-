@@ -59,7 +59,10 @@ impl CoverCache {
 
         let cache_file = self.root.join(format!("{normalized}.jpg"));
         if cache_file.exists() {
-            return Ok(Some(discord_cover_url(&public_cover_url_from(base, &normalized))));
+            return Ok(Some(discord_cover_url(&public_cover_url_from(
+                base,
+                &normalized,
+            ))));
         }
 
         let missing_file = self.root.join(format!("{normalized}.missing"));
