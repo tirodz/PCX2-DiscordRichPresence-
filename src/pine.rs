@@ -30,12 +30,9 @@ pub struct PineClient {
 
 impl PineClient {
     pub fn connect(host: &str, port: u16) -> Result<Self, PineError> {
-        let address = (host, port)
-            .to_socket_addrs()?
-            .next()
-            .ok_or_else(|| {
-                std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no address")
-            })?;
+        let address = (host, port).to_socket_addrs()?.next().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no address")
+        })?;
 
         let stream = TcpStream::connect_timeout(&address, Duration::from_millis(1000))?;
         stream.set_read_timeout(Some(Duration::from_millis(1500)))?;
@@ -104,7 +101,11 @@ impl PineClient {
         let title = self.text(MSG_TITLE).unwrap_or_default().trim().to_string();
         let serial = self.text(MSG_ID).unwrap_or_default().trim().to_string();
         let crc = self.text(MSG_UUID).unwrap_or_default().trim().to_string();
-        let version = self.text(MSG_GAME_VERSION).unwrap_or_default().trim().to_string();
+        let version = self
+            .text(MSG_GAME_VERSION)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
 
         if title.is_empty() && serial.is_empty() {
             return Ok(RuntimeState::Bios {
@@ -155,10 +156,7 @@ mod tests {
         let server = thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
 
-            for (index, expected_opcode) in [0x0F_u8, 0x0B, 0x0C, 0x0D, 0x0E]
-                .iter()
-                .enumerate()
-            {
+            for (index, expected_opcode) in [0x0F_u8, 0x0B, 0x0C, 0x0D, 0x0E].iter().enumerate() {
                 let mut header = [0u8; 4];
                 stream.read_exact(&mut header).unwrap();
                 assert_eq!(u32::from_le_bytes(header), 5);
@@ -288,7 +286,10 @@ mod tests {
         });
 
         let mut client = PineClient::connect("127.0.0.1", port).unwrap();
-        assert_eq!(client.read_state().unwrap(), RuntimeState::Bios { paused: false });
+        assert_eq!(
+            client.read_state().unwrap(),
+            RuntimeState::Bios { paused: false }
+        );
         server.join().unwrap();
     }
 
