@@ -560,7 +560,7 @@ impl Wizard {
         ui.add_space(8.0);
         ui.label(
             egui::RichText::new(
-                "PCSX2's own Discord presence is disabled during setup so this app can be the                  only publisher. The previous setting is restored when you uninstall.",
+                "PCSX2's own Discord presence is disabled during setup so this app can be the                  only publisher. The previous setting is restored when you uninstall. If PCSX2                  is already running, restart it after setup so the change takes effect.",
             )
             .small(),
         );
@@ -769,7 +769,7 @@ impl eframe::App for Settings {
                 ui.add_space(6.0);
                 ui.label(
                     egui::RichText::new(
-                        "The app keeps PCSX2's own Discord presence disabled while it is installed                          so the custom activity is the only one being published.",
+                        "The app keeps PCSX2's own Discord presence disabled while it is installed so the custom                          activity is the only one being published. Restart PCSX2 after changing                          this if it was already open.",
                     )
                     .small(),
                 );
