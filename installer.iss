@@ -42,4 +42,6 @@ Name: "{app}\.stop"
 Type: files
 Name: "{app}\.pid"
 Type: files
+Name: "{app}\.pcsx2-discord-rpc-backup.toml"
+Type: files
 Name: "{app}\helper.log"
