@@ -271,7 +271,7 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
                     let suffix = comment_offset
                         .map(|offset| &after[offset..])
                         .unwrap_or("");
-                    lines[index] = format!("{}= {}{}{}", &body[..=eq], value, suffix, eol);
+                    lines[index] = format!("{} {}{}{}", &body[..=eq], value, suffix, eol);
                     return lines.concat();
                 }
             }
@@ -401,5 +401,24 @@ mod tests {
         let updated = remove_setting(text, "EmuCore", "EnableDiscordPresence");
         assert!(!updated.contains("EnableDiscordPresence"));
         assert!(updated.contains("Other = 1"));
+    }
+
+    #[test]
+    fn preserves_the_original_value_for_restore() {
+        let text = "[EmuCore]\nEnableDiscordPresence = 1\n";
+        let disabled = set_setting(text, "EmuCore", "EnableDiscordPresence", "false");
+        assert_eq!(
+            find_setting(&disabled, "EmuCore", "EnableDiscordPresence")
+                .unwrap()
+                .as_deref(),
+            Some("false")
+        );
+        let restored = set_setting(
+            &disabled,
+            "EmuCore",
+            "EnableDiscordPresence",
+            "1",
+        );
+        assert_eq!(restored, text);
     }
 }
