@@ -49,7 +49,7 @@ pub fn disable_builtin_discord(executable: &Path) -> Result<()> {
         .as_deref()
         .map(parse_bool)
         .transpose()
-        .with_context(|| format!("parsing {KEY} in {}", config_path.display()))?
+        .map_err(|error| anyhow::anyhow!("parsing {KEY} in {}: {error}", config_path.display()))?
         .unwrap_or(false);
 
     let same_backup = existing_backup
@@ -104,8 +104,8 @@ fn restore_backup(backup: &Backup) -> Result<()> {
         // manual change rather than recreating it during uninstall.
         return Ok(());
     };
-    let current_enabled =
-        parse_bool(&current_raw).with_context(|| format!("parsing {KEY} in {}", path.display()))?;
+    let current_enabled = parse_bool(&current_raw)
+        .map_err(|error| anyhow::anyhow!("parsing {KEY} in {}: {error}", path.display()))?;
 
     if !current_enabled {
         let new_text = match backup.original_value.as_deref() {
