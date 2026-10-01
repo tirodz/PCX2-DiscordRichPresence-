@@ -208,7 +208,7 @@ fn find_setting(text: &str, section: &str, key: &str) -> Result<Option<String>, 
     for raw in text.lines() {
         let line = raw.trim();
         if line.starts_with('[') && line.ends_with(']') {
-            in_section = &line[1..line.len() - 1].trim() == &section;
+            in_section = line[1..line.len() - 1].trim() == section;
             continue;
         }
 
@@ -250,7 +250,7 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
         let trimmed = body.trim();
 
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            in_section = &trimmed[1..trimmed.len() - 1].trim() == &section;
+            in_section = trimmed[1..trimmed.len() - 1].trim() == section;
             if in_section {
                 section_found = true;
             }
@@ -286,7 +286,7 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
             let (body, _) = split_eol(&lines[index]);
             let trimmed = body.trim();
             if trimmed.starts_with('[') && trimmed.ends_with(']') {
-                if &trimmed[1..trimmed.len() - 1].trim() == &section {
+                if trimmed[1..trimmed.len() - 1].trim() == section {
                     in_section = true;
                     continue;
                 }
@@ -324,7 +324,7 @@ fn remove_setting(text: &str, section: &str, key: &str) -> String {
         let trimmed = body.trim();
 
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            in_section = &trimmed[1..trimmed.len() - 1].trim() == &section;
+            in_section = trimmed[1..trimmed.len() - 1].trim() == section;
         }
 
         if in_section {
