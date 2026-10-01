@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   windows:
-    if: github.ref_type == 'tag' || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish-v0.1.0]'))
+    if: github.ref_type == 'tag' || (github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, '[publish-v0.1.0]'))
     runs-on: windows-latest
 
     steps:
