@@ -56,9 +56,10 @@ timestamp; leaving to the menu or closing PCSX2 ends the session.
 ## Covers
 
 Game covers are resolved by serial through the xlenore PS2 cover repository.
-Serials are normalized to the `ABCD-12345` form first. The cover is cached
-locally, but the Discord activity uses the public canonical cover URL because
-Discord's media proxy cannot retrieve a user's private local file. Serials
+Serials are normalized to the `ABCD-12345` form first. The source cover is
+cached locally, while Discord receives a public 512x512 rendition through
+wsrv.nl with aspect-ratio-preserving contain/letterboxing so portrait box art
+does not get cropped by Discord's square large-image presentation. Serials
 without a cover get a `.missing` marker (valid for a week) so they are not
 re-requested on every refresh.
 
@@ -73,6 +74,14 @@ intervals. The first-run wizard collects these interactively (validating the
 PCSX2 path and the application ID, and optionally testing the PINE
 connection), writes the config, registers startup, and launches the helper.
 The settings window edits the same fields later.
+
+## Built-in Discord presence
+
+PCSX2 has its own optional Discord presence controlled by
+`EmuCore/EnableDiscordPresence`. During setup this app disables that setting
+when a PCSX2 configuration file is available, records the previous value, and
+restores it on uninstall. If the emulator has never created a settings file,
+PCSX2's default is already off, so no file is created just for the takeover.
 
 ## Automatic lifecycle
 
