@@ -649,6 +649,13 @@ impl Settings {
             }
         };
 
+        if let Err(error) = pcsx2::disable_builtin_discord(Path::new(&config.pcsx2.exe_path)) {
+            self.error = Some(format!(
+                "could not disable PCSX2's built-in Discord presence: {error:#}"
+            ));
+            return;
+        }
+
         if let Err(error) = config.save() {
             self.error = Some(format!("could not save the configuration: {error:#}"));
             return;
