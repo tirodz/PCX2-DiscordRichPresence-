@@ -11,7 +11,7 @@ const COVER_BASE: &str =
 /// Discord Rich Presence renders the large image as a square, so send a
 /// square, letterboxed rendition rather than letting Discord crop the cover.
 const DISCORD_COVER_PROXY: &str = "https://wsrv.nl/";
-const DISCORD_COVER_SIZE: &str = "512";
+const DISCORD_COVER_SIZE: &str = "1024";
 
 /// How long a "this serial has no cover" answer is remembered before the
 /// lookup is tried again.
@@ -195,8 +195,8 @@ mod tests {
         )
         .unwrap();
         assert!(url.starts_with("https://wsrv.nl/?"));
-        assert!(url.contains("w=512"));
-        assert!(url.contains("h=512"));
+        assert!(url.contains("w=1024"));
+        assert!(url.contains("h=1024"));
         assert!(url.contains("fit=contain"));
         assert!(url.contains("output=jpg"));
         assert!(url.contains("SLUS-20946.jpg"));
