@@ -225,14 +225,7 @@ fn find_setting(text: &str, section: &str, key: &str) -> Option<String> {
             continue;
         }
 
-        let value = value
-            .split_once(';')
-            .map(|(value, _)| value)
-            .unwrap_or(value)
-            .split_once('#')
-            .map(|(value, _)| value)
-            .unwrap_or(value)
-            .trim();
+        let value = value.split([';', '#']).next().unwrap_or(value).trim();
 
         return Some(value.to_string());
     }
@@ -293,31 +286,34 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
     let setting = format!("{} = {}{}", key, value, newline);
 
     if section_found {
-        in_section = false;
+        let mut section_end = lines.len();
+        let mut in_section = false;
+
         for index in 0..lines.len() {
             let (body, _) = split_eol(&lines[index]);
             let trimmed = body.trim();
+
             if trimmed.starts_with('[') && trimmed.ends_with(']') {
-                if trimmed[1..trimmed.len() - 1].trim() == section {
-                    in_section = true;
-                    continue;
-                }
                 if in_section {
-                    lines.insert(index, setting);
-                    return lines.concat();
+                    section_end = index;
+                    break;
                 }
+                in_section = trimmed[1..trimmed.len() - 1].trim() == section;
             }
         }
 
-        if let Some(last) = lines.last_mut() {
-            if !last.ends_with('\n') {
-                last.push_str(newline);
+        let mut insert_at = section_end;
+        while insert_at > 0 {
+            let (body, _) = split_eol(&lines[insert_at - 1]);
+            if !body.trim().is_empty() {
+                break;
             }
+            insert_at -= 1;
         }
-        lines.push(setting);
+
+        lines.insert(insert_at, setting);
         return lines.concat();
     }
-
     let mut output = text.to_string();
     if !output.is_empty() && !output.ends_with('\n') {
         output.push_str(newline);
@@ -398,6 +394,15 @@ mod tests {
         let text = "[EmuCore]\nEnableDiscordPresence = true    ; note\n";
         let updated = set_setting(text, "EmuCore", "EnableDiscordPresence", "false");
         assert!(updated.contains("EnableDiscordPresence = false    ; note"));
+    }
+
+    #[test]
+    fn finds_values_without_inline_comments() {
+        let text = "[EmuCore]\nEnableDiscordPresence = false ; note\n";
+        assert_eq!(
+            find_setting(text, "EmuCore", "EnableDiscordPresence").as_deref(),
+            Some("false")
+        );
     }
 
     #[test]
