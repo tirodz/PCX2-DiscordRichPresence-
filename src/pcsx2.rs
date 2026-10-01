@@ -240,7 +240,7 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
     let mut in_section = false;
     let mut section_found = false;
 
-    for (index, line) in lines.iter_mut().enumerate() {
+    for line in lines.iter_mut() {
         let replacement = {
             let (body, eol) = split_eol(line);
             let trimmed = body.trim();
@@ -292,7 +292,6 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
             return lines.concat();
         }
 
-        let _ = index;
     }
 
     let setting = format!("{} = {}{}", key, value, newline);
