@@ -91,8 +91,7 @@ impl CoverCache {
             .with_context(|| format!("writing {}", cache_file.display()))?;
 
         // Discord cannot fetch a user's private file:// URL. Keep the cache
-        // for offline/local use, while the presence uses the canonical
-        // public cover URL through Discord's media proxy.
+        // for offline/local use, while the presence uses the public square cover URL through the image resize proxy.
         Ok(Some(discord_cover_url(&url)?))
     }
 }
