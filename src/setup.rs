@@ -10,6 +10,7 @@ use eframe::egui;
 use crate::autostart;
 use crate::config::{self, Config};
 use crate::helper;
+use crate::pcsx2;
 use crate::pine::PineClient;
 use crate::state::RuntimeState;
 
@@ -109,10 +110,18 @@ fn apply_setup(form: &FormState) -> Vec<StepResult> {
         }
     };
 
+    let takeover = pcsx2::disable_builtin_discord(Path::new(&config.pcsx2.exe_path))
+        .map_err(|e| format!("could not disable PCSX2's built-in Discord presence: {e:#}"));
+    results.push(("Disable PCSX2's built-in Discord presence", takeover));
+
     results.push((
         "Save the configuration",
         config.save().map_err(|e| format!("{e:#}")),
     ));
+    if results.get(results.len().saturating_sub(2)).map(|(_, r)| r.is_err()) == Some(true) {
+        return results;
+    }
+
     if results.last().map(|(_, r)| r.is_err()) == Some(true) {
         return results;
     }
