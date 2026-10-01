@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -31,24 +34,51 @@ jobs:
       - name: Build installer
         shell: pwsh
         run: |
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) {
-            throw "Inno Setup was not found at $iscc"
+          $candidates = @(
+            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          )
+          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $iscc) {
+            choco install innosetup --no-progress --yes
+            $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
           }
+
+          if (-not $iscc) {
+            throw "Inno Setup could not be found or installed."
+          }
+
           & $iscc installer.iss
 
-      - name: Package portable build
+      - name: Package portable build and checksums
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item target/release/pcsx2-discord-rich-presence.exe dist/
-          Copy-Item README.md dist/
-          Compress-Archive -Path dist/* -DestinationPath "PCSX2-DiscordRichPresence-windows-x64.zip"
+          $version = $env:GITHUB_REF_NAME
+          $portable = "PCSX2-DiscordRichPresence-$version-windows-x64.zip"
+          $installer = "PCSX2-DiscordRichPresence-$version-Setup.exe"
+
+          $stage = Join-Path $PWD "dist"
+          Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force $stage | Out-Null
+
+          Copy-Item target/release/pcsx2-discord-rich-presence.exe $stage/
+          Copy-Item README.md $stage/
+          Compress-Archive -Path "$stage\*" -DestinationPath $portable
+
+          Copy-Item Output/PCSX2-DiscordRichPresence-Setup.exe $installer
+
+          $lines = @(
+            (Get-FileHash $portable -Algorithm SHA256).Hash.ToLower() + "  " + $portable
+            (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower() + "  " + $installer
+          )
+          $lines | Set-Content SHA256SUMS.txt -Encoding ascii
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
-            PCSX2-DiscordRichPresence-windows-x64.zip
-            Output/PCSX2-DiscordRichPresence-Setup.exe
+            PCSX2-DiscordRichPresence-${{ github.ref_name }}-windows-x64.zip
+            PCSX2-DiscordRichPresence-${{ github.ref_name }}-Setup.exe
+            SHA256SUMS.txt
