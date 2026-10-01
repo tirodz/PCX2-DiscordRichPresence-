@@ -42,8 +42,8 @@ pub fn disable_builtin_discord(executable: &Path) -> Result<()> {
         }
     }
 
-    let current_text =
-        fs::read_to_string(&config_path).with_context(|| format!("reading {}", config_path.display()))?;
+    let current_text = fs::read_to_string(&config_path)
+        .with_context(|| format!("reading {}", config_path.display()))?;
     let current_raw = find_setting(&current_text, SECTION, KEY)?;
     let current_enabled = current_raw
         .as_deref()
@@ -104,8 +104,8 @@ fn restore_backup(backup: &Backup) -> Result<()> {
         // manual change rather than recreating it during uninstall.
         return Ok(());
     };
-    let current_enabled = parse_bool(&current_raw)
-        .with_context(|| format!("parsing {KEY} in {}", path.display()))?;
+    let current_enabled =
+        parse_bool(&current_raw).with_context(|| format!("parsing {KEY} in {}", path.display()))?;
 
     if !current_enabled {
         let new_text = match backup.original_value.as_deref() {
@@ -183,7 +183,9 @@ fn load_backup(path: &Path) -> Result<Option<Backup>> {
         return Ok(None);
     }
     let text = fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
-    Ok(Some(toml::from_str(&text).with_context(|| format!("parsing {}", path.display()))?))
+    Ok(Some(
+        toml::from_str(&text).with_context(|| format!("parsing {}", path.display()))?,
+    ))
 }
 
 fn remove_backup(path: &Path) -> Result<()> {
@@ -268,9 +270,7 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
                         (None, Some(b)) => Some(b),
                         (None, None) => None,
                     };
-                    let suffix = comment_offset
-                        .map(|offset| &after[offset..])
-                        .unwrap_or("");
+                    let suffix = comment_offset.map(|offset| &after[offset..]).unwrap_or("");
                     lines[index] = format!("{} {}{}{}", &body[..=eq], value, suffix, eol);
                     return lines.concat();
                 }
@@ -376,7 +376,9 @@ mod tests {
         assert!(updated.contains("EnableDiscordPresence = false ; keep this note"));
         assert!(updated.contains("Other = 1"));
         assert_eq!(
-            find_setting(&updated, "EmuCore", "EnableDiscordPresence").unwrap().as_deref(),
+            find_setting(&updated, "EmuCore", "EnableDiscordPresence")
+                .unwrap()
+                .as_deref(),
             Some("false")
         );
     }
@@ -413,12 +415,7 @@ mod tests {
                 .as_deref(),
             Some("false")
         );
-        let restored = set_setting(
-            &disabled,
-            "EmuCore",
-            "EnableDiscordPresence",
-            "1",
-        );
+        let restored = set_setting(&disabled, "EmuCore", "EnableDiscordPresence", "1");
         assert_eq!(restored, text);
     }
 }
