@@ -2,38 +2,90 @@
 
 ## PCSX2
 
-The integration uses PCSX2's native PINE IPC rather than window-title scraping, injection, memory scanning, or modified emulator binaries.
+The integration uses PCSX2's native PINE IPC rather than window-title
+scraping, injection, memory scanning, or modified emulator binaries.
 
-On Windows, the current PCSX2 source uses TCP on localhost and defines 28011 as the default PINE slot. PINE provides title, serial/ID, CRC/UUID, game version, and emulator status.
+On Windows, PINE speaks TCP on localhost, slot 28011 by default (the slot is
+configurable in PCSX2 and in this app's settings). PINE provides the game
+title, serial/ID, CRC/UUID, game version, and the emulator status
+(Running / Paused / Shutdown).
+
+Replies are framed as a little-endian u32 total length (including the four
+length bytes), one result byte (`0` = ok, `0xFF` = fail), then the payload.
+String payloads are a u32 length (including the NUL terminator) followed by
+the string bytes. When no VM is running, the metadata opcodes answer with
+fail, which the client treats as "no game metadata".
 
 ## Runtime states
 
 - Offline: PINE is unreachable, so PCSX2 is not available to the integration.
-- Idle: PINE is reachable but the VM reports Shutdown. This represents PCSX2 being open without an active PS2 VM.
+- Idle: PINE is reachable but the VM reports Shutdown. This represents PCSX2
+  being open without an active PS2 VM.
 - BIOS: a VM is active but title/serial metadata is unavailable.
 - Game: title/serial metadata is available.
 - Paused: represented on BIOS/Game states.
 
-The BIOS classification is intentionally conservative. Real PCSX2 testing must confirm exactly what the current BIOS/system-menu VM reports.
+The BIOS classification is intentionally conservative. Real PCSX2 testing
+must confirm exactly what the current BIOS/system-menu VM reports.
+
+## Helper loop
+
+The background helper keeps one PINE connection open across polls instead of
+reconnecting every cycle. Connection and query failures are debounced: only
+after several consecutive failures is PCSX2 considered gone and the Discord
+activity cleared. Short hiccups while a game boots therefore neither clear
+the activity nor reset the session timer.
+
+While PINE is unreachable the loop just sleeps between connection attempts,
+so an idle helper costs essentially nothing.
 
 ## Discord
 
-The Discord connection is lazy: the application does not open Discord IPC until it has a PCSX2 state to publish.
+The Discord connection is lazy: the application does not open Discord IPC
+until it has a PCSX2 state to publish.
 
-The last activity signature is cached to avoid unnecessary SET_ACTIVITY traffic. A periodic refresh prevents stale activity, while Discord disconnects are recovered on the next publish.
+The last activity signature is cached to avoid unnecessary SET_ACTIVITY
+traffic, with a periodic refresh so the activity never goes stale. A failed
+publish drops the IPC client and retries with backoff, so a closed Discord
+client produces one log line instead of a stream of errors.
 
-Extreme-InfiniTV was used as a reference for this lifecycle pattern: lazy connection, mutex-protected Discord client, quiet handling when Discord is absent, explicit idle presence, and clear/disconnect behavior.
+The game session (title + serial + CRC + version) owns the elapsed timer.
+Pause/resume republishes the state text but keeps the original start
+timestamp; leaving to the menu or closing PCSX2 ends the session.
 
 ## Covers
 
-Game covers are resolved by serial through the xlenore PS2 cover repository. The cover is cached locally, but the Discord activity uses the public canonical cover URL because Discord's media proxy cannot retrieve a user's private local file.
+Game covers are resolved by serial through the xlenore PS2 cover repository.
+Serials are normalized to the `ABCD-12345` form first. The cover is cached
+locally, but the Discord activity uses the public canonical cover URL because
+Discord's media proxy cannot retrieve a user's private local file. Serials
+without a cover get a `.missing` marker (valid for a week) so they are not
+re-requested on every refresh.
 
-A missing cover never prevents the text presence from being published.
+A missing cover never prevents the text presence from being published; the
+PCSX2 logo is the fallback artwork.
+
+## Configuration and setup
+
+Configuration lives in `config.toml` next to the executable: the PCSX2
+executable path, the PINE host/slot, the Discord application ID, and the poll
+intervals. The first-run wizard collects these interactively (validating the
+PCSX2 path and the application ID, and optionally testing the PINE
+connection), writes the config, registers startup, and launches the helper.
+The settings window edits the same fields later.
 
 ## Automatic lifecycle
 
-Windows setup is handled with a per-user startup entry. The helper starts silently at logon, waits for PCSX2's PINE endpoint, and does not connect to Discord until there is emulator state to publish.
+Windows startup is a per-user `Run` registry entry pointing at the
+executable with `--background`. No administrator privileges or Windows
+service are required.
 
-When PCSX2 closes, PINE becomes unreachable and the helper clears the Discord activity. It remains resident in the background so a later PCSX2 launch is picked up without another manual launch.
+The helper starts silently at logon, refuses to run twice (PID file plus a
+liveness check), and waits for PCSX2's PINE endpoint. When PCSX2 closes, the
+activity is cleared; the helper stays resident so the next launch is picked
+up automatically.
 
-The startup entry can be removed with `--uninstall`. No administrator privileges or Windows service are required.
+`--uninstall` removes the registry entry and asks the running helper to exit
+through a `.stop` file next to the executable, which the installer uses for
+clean uninstalls. The setup wizard and settings window start and restart the
+helper through the same mechanism.

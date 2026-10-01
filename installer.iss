@@ -17,16 +17,19 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 Uninstallable=yes
+UninstallDisplayIcon={app}\{#MyAppExeName}
+SetupIconFile=assets\icon.ico
 
 [Files]
 Source: "target\release\pcsx2-discord-rich-presence.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--help"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--install"; Flags: runhidden nowait skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Set up PCSX2 Discord Rich Presence now"; Flags: postinstall skipifsilent
 
 [UninstallRun]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--uninstall"; Flags: runhidden skipifdoesntexist
@@ -38,3 +41,5 @@ Type: files
 Name: "{app}\.stop"
 Type: files
 Name: "{app}\.pid"
+Type: files
+Name: "{app}\helper.log"

@@ -1,80 +1,123 @@
 # PCSX2 Discord Rich Presence
 
-A small Windows helper that connects PCSX2 to Discord Rich Presence through PCSX2's native PINE interface.
+A small Windows companion that shows your PCSX2 session in Discord: which game
+you're playing, how long you've been playing it, and whether you're paused -
+with the actual PS2 cover art.
 
-The goal is to make it feel like part of PCSX2: start PCSX2, and the Discord activity follows it without having to launch an RPC program every time.
+It talks to PCSX2 through PINE, the IPC interface built into the emulator. No
+window scraping, no memory reading, no modified PCSX2 files.
 
-## What it does
+## What it looks like
 
-- Shows an idle PCSX2 activity while the emulator is sitting at its main menu
-- Detects the PS2 system menu/BIOS state
-- Reads the game title, serial, CRC and version through PINE
-- Finds PS2 cover art from the serial and uses it in Discord
-- Shows playing and paused states
-- Keeps the elapsed timer tied to the game session instead of resetting on pause/resume
-- Caches downloaded covers locally
-- Reconnects cleanly when Discord or PCSX2 goes away
-- Can be installed once to start automatically with Windows
-- Runs without an extra visible helper window
+| PCSX2 state | Discord activity |
+| --- | --- |
+| PCSX2 open, no game | **PCSX2** - At the Main Menu |
+| PS2 system menu | **PlayStation 2** - System Menu |
+| Game running | **Game title** - Playing on PCSX2, cover art, elapsed time |
+| Game paused | **Game title** - Paused on PCSX2, timer keeps counting |
+| PCSX2 closed | activity cleared |
 
-## How it works
+The elapsed timer belongs to the game session: pausing and resuming does not
+reset it, closing the game does.
 
-PCX2-DiscordRichPresence does not scrape the PCSX2 window or inject code into the emulator.
+## Requirements
 
-The helper talks to the PINE TCP server on `127.0.0.1:28011`, turns the emulator's status and metadata into a small state machine, resolves cover art from the game serial, and publishes the result through Discord IPC.
+- Windows 10 or 11 (64-bit)
+- PCSX2 2.x (any recent Qt build, installed or portable)
+- The Discord desktop app
+- A Discord application ID (free, takes a minute - see below)
 
-When PINE is unavailable, the Discord activity is cleared. The helper stays in the background so the next PCSX2 launch is picked up automatically.
+## Installation
 
-## Setup
+Download the latest release from the
+[Releases](https://github.com/tirodz/PCX2-DiscordRichPresence-/releases) page:
 
-### 1. Enable PINE in PCSX2
+- **`PCSX2-DiscordRichPresence-Setup.exe`** - installer (recommended)
+- **`PCSX2-DiscordRichPresence-*-windows-x64.zip`** - portable build, just
+  unzip and run
 
-Enable the PINE server in PCSX2. The default Windows slot is `28011`.
+The installer does not need administrator rights. It puts the app in your user
+profile, adds a Start Menu entry, and offers to run the setup wizard when it
+finishes.
 
-### 2. Create a Discord application
+## First-run setup
 
-Create a Discord application and copy its Application ID (Client ID). This is an application identifier, not your Discord account token.
+The setup wizard opens the first time you run the app (or any time with
+`--setup`):
 
-Put it in `config.toml` next to the executable:
+1. **PCSX2 location** - browse to your PCSX2 executable, usually
+   `pcsx2-qt.exe`. Installed and portable versions both work. The app checks
+   that the file you picked really looks like PCSX2.
+2. **PINE connection** - the helper reads the emulator state through PINE.
+   Enable it once in PCSX2 under **Settings 竊・Advanced 竊・PINE** and keep the
+   default slot `28011`. The wizard can test the connection while PCSX2 is
+   running.
+3. **Discord application** - Discord shows rich presence for an application
+   ID. Create your own at
+   [discord.com/developers/applications](https://discord.com/developers/applications):
+   *New Application*, name it whatever you like (e.g. "PCSX2"), and copy the
+   **Application ID** from the General Information page. This is a public
+   identifier, not your password or token.
+4. **Confirm** - choose whether the helper should start with Windows and start
+   right away.
 
-```toml
-[pine]
-host = "127.0.0.1"
-port = 28011
+Everything is stored in `config.toml` next to the executable and can be
+changed later: run the app again to open the settings window.
 
-[discord]
-client_id = "YOUR_DISCORD_APPLICATION_ID"
+## Everyday use
 
-poll_seconds = 2
-retry_seconds = 3
-```
+There is nothing to do. The helper starts with Windows, sits quietly in the
+background (no window, no console), and waits for PCSX2:
 
-### 3. Install automatic startup
+- Start PCSX2 竊・Discord shows **PCSX2 - At the Main Menu**
+- Boot a game 竊・title, cover art and a running timer appear
+- Pause 竊・status switches to *Paused on PCSX2*, the timer keeps counting
+- Close the game 竊・back to the main menu status
+- Quit PCSX2 竊・the Discord activity clears
 
-Run the executable once with:
+If Discord isn't running, the helper simply waits and publishes once Discord
+is back.
 
-```text
-pcsx2-discord-rich-presence.exe --install
-```
+## Cover artwork
 
-That adds a per-user Windows startup entry. No administrator privileges are needed.
+Covers come from the [xlenore/ps2-covers](https://github.com/xlenore/ps2-covers)
+database, matched by the game's serial (SLUS/SCES/SLPS/...). Discord loads the
+cover through its public URL, so your friends see the same image you do.
+Covers are cached locally, serials without a cover are remembered instead of
+re-fetched, and a missing cover never breaks the text presence - the PCSX2
+logo is used as a fallback.
 
-Useful commands:
+## Troubleshooting
 
-```text
---install      enable automatic startup
---uninstall    remove automatic startup
---status       check the startup entry
---help         show the available commands
-```
+The helper writes `helper.log` next to the executable - look there first.
 
-After that, the normal flow is simply:
+- **Nothing shows in Discord.** Make sure the Discord desktop app is running
+  (the browser version can't show rich presence), and that *Activity Privacy 竊・
+  Share your detected activities* is enabled in Discord's settings.
+- **"Could not connect" in the PINE test.** PCSX2 must be running and PINE
+  must be enabled under Settings 竊・Advanced. If you changed the PINE slot in
+  PCSX2, use the same number in the settings window.
+- **Wrong or missing cover.** The cover database is keyed by serial; some
+  releases (homebrew, prototypes, some betas) have no entry. The game title
+  and timer still work.
+- **The status is stuck after quitting PCSX2.** It should clear within a few
+  seconds. If it doesn't, check `helper.log` and restart the helper from the
+  settings window (*Save and restart helper*).
+- **Command line.** `--status` shows whether startup and the helper are
+  active; `--install` / `--uninstall` manage the Windows startup entry;
+  `--background` is what the startup entry runs.
 
-**PCSX2 starts → PINE becomes available → Discord presence appears → game/paused/menu state follows → PCSX2 closes → presence clears.**
+## Uninstalling
 
-## Development
+Use *Add or Remove Programs* or the Start Menu uninstall entry. This stops the
+background helper, removes the startup registration, and deletes the app's
+files and its configuration. Your PCSX2 installation and its settings are
+never touched.
 
-Use a current stable Rust toolchain:
+## Building from source
+
+You need a current stable Rust toolchain. Everything else is fetched by
+Cargo:
 
 ```text
 cargo fmt --all -- --check
@@ -83,11 +126,14 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo build --release
 ```
 
-GitHub Actions runs the formatting, tests, Clippy and Windows release build on pushes and pull requests.
+The Windows executable lands in `target\release`. To build the installer, run
+Inno Setup (`ISCC.exe installer.iss`) after the release build.
 
-## References
+GitHub Actions runs the checks and build on every push, and publishes the
+installer, the portable ZIP and SHA-256 checksums when a `v*` tag is pushed.
 
-- PCSX2 PINE: https://github.com/PCSX2/pcsx2/blob/master/pcsx2/PINE.cpp
-- PINE reference client: https://github.com/GovanifY/pine
-- PS2 cover database: https://github.com/xlenore/ps2-covers
-- Extreme-InfiniTV: https://github.com/infinitel8p/Extreme-InfiniTV
+## Credits
+
+- [PCSX2](https://github.com/PCSX2/pcsx2) and its PINE interface
+- [GovanifY/pine](https://github.com/GovanifY/pine), the PINE reference client
+- [xlenore/ps2-covers](https://github.com/xlenore/ps2-covers) for the cover art
