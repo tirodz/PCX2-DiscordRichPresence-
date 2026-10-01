@@ -4,10 +4,14 @@ use std::time::{Duration, SystemTime};
 
 use anyhow::{Context, Result};
 use directories::ProjectDirs;
-use reqwest::blocking::Client;
+use reqwest::{blocking::Client, Url};
 
 const COVER_BASE: &str =
     "https://raw.githubusercontent.com/xlenore/ps2-covers/main/covers/default/";
+/// Discord Rich Presence renders the large image as a square, so send a
+/// square, letterboxed rendition rather than letting Discord crop the cover.
+const DISCORD_COVER_PROXY: &str = "https://wsrv.nl/";
+const DISCORD_COVER_SIZE: &str = "512";
 
 /// How long a "this serial has no cover" answer is remembered before the
 /// lookup is tried again.
@@ -55,7 +59,7 @@ impl CoverCache {
 
         let cache_file = self.root.join(format!("{normalized}.jpg"));
         if cache_file.exists() {
-            return Ok(Some(public_cover_url_from(base, &normalized)));
+            return Ok(Some(discord_cover_url(&public_cover_url_from(base, &normalized))));
         }
 
         let missing_file = self.root.join(format!("{normalized}.missing"));
@@ -86,7 +90,7 @@ impl CoverCache {
         // Discord cannot fetch a user's private file:// URL. Keep the cache
         // for offline/local use, while the presence uses the canonical
         // public cover URL through Discord's media proxy.
-        Ok(Some(url))
+        Ok(Some(discord_cover_url(&url)?))
     }
 }
 
@@ -134,6 +138,20 @@ fn public_cover_url_from(base: &str, serial: &str) -> String {
     format!("{base}{serial}.jpg")
 }
 
+fn discord_cover_url(source_url: &str) -> Result<String> {
+    let mut url = Url::parse(DISCORD_COVER_PROXY).context("parsing cover proxy URL")?;
+    url.query_pairs_mut()
+        .append_pair("url", source_url)
+        .append_pair("w", DISCORD_COVER_SIZE)
+        .append_pair("h", DISCORD_COVER_SIZE)
+        .append_pair("fit", "contain")
+        .append_pair("cbg", "black")
+        .append_pair("output", "jpg")
+        .append_pair("q", "90")
+        .append_pair("maxage", "604800");
+    Ok(url.to_string())
+}
+
 #[allow(dead_code)]
 fn public_cover_url(serial: &str) -> String {
     public_cover_url_from(COVER_BASE, serial)
@@ -165,6 +183,20 @@ mod tests {
     #[test]
     fn builds_serial_cover_url() {
         assert!(public_cover_url("SLUS-21274").ends_with("/SLUS-21274.jpg"));
+    }
+
+    #[test]
+    fn builds_square_discord_cover_url() {
+        let url = super::discord_cover_url(
+            "https://raw.githubusercontent.com/xlenore/ps2-covers/main/covers/default/SLUS-20946.jpg",
+        )
+        .unwrap();
+        assert!(url.starts_with("https://wsrv.nl/?"));
+        assert!(url.contains("w=512"));
+        assert!(url.contains("h=512"));
+        assert!(url.contains("fit=contain"));
+        assert!(url.contains("output=jpg"));
+        assert!(url.contains("SLUS-20946.jpg"));
     }
 
     /// Tiny HTTP stub that serves one cover and 404s everything else.
