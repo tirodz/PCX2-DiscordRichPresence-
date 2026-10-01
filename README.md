@@ -49,7 +49,7 @@ The setup wizard opens the first time you run the app (or any time with
    `pcsx2-qt.exe`. Installed and portable versions both work. The app checks
    that the file you picked really looks like PCSX2.
 2. **PINE connection** - the helper reads the emulator state through PINE.
-   Enable it once in PCSX2 under **Settings 竊・Advanced 竊・PINE** and keep the
+   Enable it once in PCSX2 under **Settings -> Advanced -> PINE** and keep the
    default slot `28011`. The wizard can test the connection while PCSX2 is
    running.
 3. **Discord application** - Discord shows rich presence for an application
@@ -69,11 +69,11 @@ changed later: run the app again to open the settings window.
 There is nothing to do. The helper starts with Windows, sits quietly in the
 background (no window, no console), and waits for PCSX2:
 
-- Start PCSX2 竊・Discord shows **PCSX2 - At the Main Menu**
-- Boot a game 竊・title, cover art and a running timer appear
-- Pause 竊・status switches to *Paused on PCSX2*, the timer keeps counting
-- Close the game 竊・back to the main menu status
-- Quit PCSX2 竊・the Discord activity clears
+- Start PCSX2 -> Discord shows **PCSX2 - At the Main Menu**
+- Boot a game -> title, cover art and a running timer appear
+- Pause -> status switches to *Paused on PCSX2*, the timer keeps counting
+- Close the game -> back to the main menu status
+- Quit PCSX2 -> the Discord activity clears
 
 If Discord isn't running, the helper simply waits and publishes once Discord
 is back.
@@ -92,10 +92,10 @@ logo is used as a fallback.
 The helper writes `helper.log` next to the executable - look there first.
 
 - **Nothing shows in Discord.** Make sure the Discord desktop app is running
-  (the browser version can't show rich presence), and that *Activity Privacy 竊・
+  (the browser version can't show rich presence), and that *Activity Privacy ->
   Share your detected activities* is enabled in Discord's settings.
 - **"Could not connect" in the PINE test.** PCSX2 must be running and PINE
-  must be enabled under Settings 竊・Advanced. If you changed the PINE slot in
+  must be enabled under Settings -> Advanced. If you changed the PINE slot in
   PCSX2, use the same number in the settings window.
 - **Wrong or missing cover.** The cover database is keyed by serial; some
   releases (homebrew, prototypes, some betas) have no entry. The game title
