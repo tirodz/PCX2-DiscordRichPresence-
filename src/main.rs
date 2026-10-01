@@ -23,12 +23,8 @@ fn main() -> Result<()> {
             autostart::clear_stop_request()?;
         }
         Some("--uninstall") => {
-            if let Ok(config) = Config::load() {
-                if let Err(error) = pcsx2::restore_builtin_discord() {
-                    logging::error(&format!("could not restore PCSX2 Discord presence setting: {error:#}"));
-                } else {
-                    let _ = config;
-                }
+            if let Err(error) = pcsx2::restore_builtin_discord() {
+                logging::error(&format!("could not restore PCSX2 Discord presence setting: {error:#}"));
             }
             autostart::uninstall()?;
         }
