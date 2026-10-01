@@ -270,7 +270,19 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
                         (None, Some(b)) => Some(b),
                         (None, None) => None,
                     };
-                    let suffix = comment_offset.map(|offset| &after[offset..]).unwrap_or("");
+                    let suffix = if let Some(offset) = comment_offset {
+                        let before_comment = &after[..offset];
+                        let whitespace_start = before_comment
+                            .char_indices()
+                            .rev()
+                            .take_while(|(_, ch)| ch.is_whitespace())
+                            .last()
+                            .map(|(index, _)| index)
+                            .unwrap_or(before_comment.len());
+                        &after[whitespace_start..]
+                    } else {
+                        ""
+                    };
                     lines[index] = format!("{} {}{}{}", &body[..=eq], value, suffix, eol);
                     return lines.concat();
                 }
@@ -278,7 +290,7 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
         }
     }
 
-    let setting = format!("{}= {}{}", key, value, newline);
+    let setting = format!("{} = {}{}", key, value, newline);
 
     if section_found {
         in_section = false;
@@ -382,6 +394,13 @@ mod tests {
     }
 
     #[test]
+    fn preserves_comment_spacing() {
+        let text = "[EmuCore]\nEnableDiscordPresence = true    ; note\n";
+        let updated = set_setting(text, "EmuCore", "EnableDiscordPresence", "false");
+        assert!(updated.contains("EnableDiscordPresence = false    ; note"));
+    }
+
+    #[test]
     fn adds_missing_setting_to_existing_section() {
         let text = "[EmuCore]\nOther = 1\n\n[GS]\nVSync = true\n";
         let updated = set_setting(text, "EmuCore", "EnableDiscordPresence", "false");
@@ -392,7 +411,7 @@ mod tests {
     fn adds_section_when_missing() {
         let text = "[GS]\nVSync = true\n";
         let updated = set_setting(text, "EmuCore", "EnableDiscordPresence", "false");
-        assert!(updated.ends_with("[EmuCore]\nEnableDiscordPresence= false\n"));
+        assert!(updated.ends_with("[EmuCore]\nEnableDiscordPresence = false\n"));
     }
 
     #[test]
