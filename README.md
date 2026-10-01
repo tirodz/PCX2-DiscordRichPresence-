@@ -84,12 +84,18 @@ its updated Discord setting is picked up.
 ## Cover artwork
 
 Covers come from the [xlenore/ps2-covers](https://github.com/xlenore/ps2-covers)
-database, matched by the game's serial (SLUS/SCES/SLPS/...). Because Discord
-renders a Rich Presence large image as a square, the public cover URL is
-wrapped in a square, letterboxed rendition so portrait box art is not cropped.
-Covers are cached locally, serials without a cover are remembered instead of
-re-fetched, and a missing cover never breaks the text presence - the PCSX2
-logo is used as a fallback.
+database, matched by the game's serial (SLUS/SCES/SLPS/...). Because Discord renders a Rich Presence large image as a square, the public
+cover URL is wrapped in a **1024 x 1024 square, letterboxed rendition** so
+portrait box art is not cropped. Covers are cached locally, serials without a
+cover are remembered instead of re-fetched, and a missing cover never breaks
+the text presence - the PCSX2 logo is used as a fallback.
+
+## Validation status
+
+The project has automated PINE, state, cover-cache, timestamp and packaging checks.
+The remaining release check is a live Windows session with PCSX2 and the Discord
+desktop app, including visual verification of the game cover in the Rich Presence
+card.
 
 ## Troubleshooting
 
