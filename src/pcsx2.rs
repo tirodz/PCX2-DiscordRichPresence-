@@ -18,9 +18,11 @@ const BACKUP_FILE: &str = ".pcsx2-discord-rpc-backup.toml";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Backup {
     config_path: String,
-    /// Exact value as it appeared before we took ownership. None means the
-    /// key was not explicitly present and PCSX2 was using its default.
-    original_value: Option<String>,
+    /// Exact value as it appeared before we took ownership.
+    original_value: String,
+    /// Fingerprint of the complete config after our change. Uninstall only
+    /// restores the file when this still matches, so manual edits are kept.
+    modified_fingerprint: u64,
 }
 
 pub fn disable_builtin_discord(executable: &Path) -> Result<()> {
@@ -56,22 +58,24 @@ pub fn disable_builtin_discord(executable: &Path) -> Result<()> {
         .as_ref()
         .filter(|backup| Path::new(&backup.config_path) == config_path);
 
-    if current_enabled {
-        let new_text = set_setting(&current_text, SECTION, KEY, "false");
-        if new_text != current_text {
-            fs::write(&config_path, new_text)
-                .with_context(|| format!("writing {}", config_path.display()))?;
-        }
+    if !current_enabled || same_backup.is_some() {
+        return Ok(());
     }
 
-    if same_backup.is_none() {
-        let backup = Backup {
-            config_path: config_path.to_string_lossy().into_owned(),
-            original_value: current_raw,
-        };
-        fs::write(&backup_path, toml::to_string_pretty(&backup)?)
-            .with_context(|| format!("writing {}", backup_path.display()))?;
-    }
+    let original_value = current_raw.ok_or_else(|| {
+        anyhow::anyhow!("PCSX2 reported Discord presence enabled but its INI setting was missing")
+    })?;
+    let new_text = set_setting(&current_text, SECTION, KEY, "false");
+    fs::write(&config_path, &new_text)
+        .with_context(|| format!("writing {}", config_path.display()))?;
+
+    let backup = Backup {
+        config_path: config_path.to_string_lossy().into_owned(),
+        original_value,
+        modified_fingerprint: fingerprint(&new_text),
+    };
+    fs::write(&backup_path, toml::to_string_pretty(&backup)?)
+        .with_context(|| format!("writing {}", backup_path.display()))?;
 
     Ok(())
 }
@@ -94,27 +98,14 @@ fn restore_backup(backup: &Backup) -> Result<()> {
     }
 
     let text = fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-    let current_raw = find_setting(&text, SECTION, KEY);
-
-    // Only undo our change if the effective setting is still disabled. If
-    // somebody changed it manually after setup, leave their newer choice
-    // alone instead of overwriting it during uninstall.
-    let Some(current_raw) = current_raw else {
-        // The setting was removed while the app was installed. Respect that
-        // manual change rather than recreating it during uninstall.
+    if fingerprint(&text) != backup.modified_fingerprint {
+        // The config changed after our takeover. Keep the user's newer state.
         return Ok(());
-    };
-    let current_enabled = parse_bool(&current_raw)
-        .map_err(|error| anyhow::anyhow!("parsing {KEY} in {}: {error}", path.display()))?;
+    }
 
-    if !current_enabled {
-        let new_text = match backup.original_value.as_deref() {
-            Some(value) => set_setting(&text, SECTION, KEY, value),
-            None => remove_setting(&text, SECTION, KEY),
-        };
-        if new_text != text {
-            fs::write(&path, new_text).with_context(|| format!("writing {}", path.display()))?;
-        }
+    let new_text = set_setting(&text, SECTION, KEY, &backup.original_value);
+    if new_text != text {
+        fs::write(&path, new_text).with_context(|| format!("writing {}", path.display()))?;
     }
 
     Ok(())
@@ -194,6 +185,17 @@ fn remove_backup(path: &Path) -> Result<()> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(error) => Err(error.into()),
     }
+}
+
+fn fingerprint(text: &str) -> u64 {
+    // Deterministic FNV-1a fingerprint used only to detect subsequent manual
+    // edits; it is not intended as a cryptographic integrity mechanism.
+    let mut hash = 0xcbf29ce484222325u64;
+    for byte in text.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    hash
 }
 
 fn parse_bool(value: &str) -> Result<bool, &'static str> {
@@ -447,5 +449,13 @@ mod tests {
         );
         let restored = set_setting(&disabled, "EmuCore", "EnableDiscordPresence", "1");
         assert_eq!(restored, text);
+    }
+
+    #[test]
+    fn fingerprint_changes_when_the_config_changes() {
+        let original = "[EmuCore]\nEnableDiscordPresence = false\n";
+        let changed = "[EmuCore]\nEnableDiscordPresence = true\n";
+        assert_ne!(fingerprint(original), fingerprint(changed));
+        assert_eq!(fingerprint(original), fingerprint(original));
     }
 }
