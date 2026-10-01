@@ -4,3 +4,6 @@ config.toml
 .cache/
 .vscode/
 .idea/
+/Cargo.lock
+/assets/icon.ico
+/assets/icon.png

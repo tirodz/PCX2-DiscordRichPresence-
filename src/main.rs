@@ -4,6 +4,7 @@ mod autostart;
 mod config;
 mod discord;
 mod helper;
+mod icon;
 mod logging;
 mod metadata;
 mod pine;
