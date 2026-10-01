@@ -110,10 +110,6 @@ fn apply_setup(form: &FormState) -> Vec<StepResult> {
         }
     };
 
-    let takeover = pcsx2::disable_builtin_discord(Path::new(&config.pcsx2.exe_path))
-        .map_err(|e| format!("could not disable PCSX2's built-in Discord presence: {e:#}"));
-    results.push(("Disable PCSX2's built-in Discord presence", takeover));
-
     results.push((
         "Disable PCSX2's built-in Discord presence",
         pcsx2::disable_builtin_discord(Path::new(&config.pcsx2.exe_path))
