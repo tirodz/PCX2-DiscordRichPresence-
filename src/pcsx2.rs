@@ -260,9 +260,15 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
             if let Some((name, _)) = body.split_once('=') {
                 if name.trim() == key {
                     let eq = body.find('=').expect("split_once found =");
-                    let suffix = body[eq + 1..]
-                        .find([';', '#'])
-                        .map(|offset| &body[eq + 1 + offset..])
+                    let after = &body[eq + 1..];
+                    let comment_offset = match (after.find(';'), after.find('#')) {
+                        (Some(a), Some(b)) => Some(a.min(b)),
+                        (Some(a), None) => Some(a),
+                        (None, Some(b)) => Some(b),
+                        (None, None) => None,
+                    };
+                    let suffix = comment_offset
+                        .map(|offset| &after[offset..])
                         .unwrap_or("");
                     lines[index] = format!("{}= {}{}{}", &body[..=eq], value, suffix, eol);
                     return lines.concat();
