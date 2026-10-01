@@ -449,9 +449,10 @@ impl Wizard {
         ui.add_space(8.0);
         ui.label(
             egui::RichText::new(
-                "This is usually called pcsx2-qt.exe or pcsx2.exe. The path is only used to \
-                 check your setup; the helper talks to PCSX2 through PINE and never modifies \
-                 the emulator.",
+                "This is usually called pcsx2-qt.exe or pcsx2.exe. The helper talks to PCSX2 \
+                 through PINE and never patches the emulator or its binaries. During setup it \
+                 may disable PCSX2's own optional Discord presence so the custom activity is the \
+                 only one being published.",
             )
             .small(),
         );
