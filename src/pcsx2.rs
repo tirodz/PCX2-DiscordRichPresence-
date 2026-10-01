@@ -44,7 +44,7 @@ pub fn disable_builtin_discord(executable: &Path) -> Result<()> {
 
     let current_text = fs::read_to_string(&config_path)
         .with_context(|| format!("reading {}", config_path.display()))?;
-    let current_raw = find_setting(&current_text, SECTION, KEY)?;
+    let current_raw = find_setting(&current_text, SECTION, KEY);
     let current_enabled = current_raw
         .as_deref()
         .map(parse_bool)
@@ -94,7 +94,7 @@ fn restore_backup(backup: &Backup) -> Result<()> {
     }
 
     let text = fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-    let current_raw = find_setting(&text, SECTION, KEY)?;
+    let current_raw = find_setting(&text, SECTION, KEY);
 
     // Only undo our change if the effective setting is still disabled. If
     // somebody changed it manually after setup, leave their newer choice
@@ -204,7 +204,7 @@ fn parse_bool(value: &str) -> Result<bool, &'static str> {
     }
 }
 
-fn find_setting(text: &str, section: &str, key: &str) -> Result<Option<String>, &'static str> {
+fn find_setting(text: &str, section: &str, key: &str) -> Option<String> {
     let mut in_section = false;
 
     for raw in text.lines() {
@@ -234,10 +234,10 @@ fn find_setting(text: &str, section: &str, key: &str) -> Result<Option<String>, 
             .unwrap_or(value)
             .trim();
 
-        return Ok(Some(value.to_string()));
+        return Some(value.to_string());
     }
 
-    Ok(None)
+    None
 }
 
 fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
@@ -376,9 +376,7 @@ mod tests {
         assert!(updated.contains("EnableDiscordPresence = false ; keep this note"));
         assert!(updated.contains("Other = 1"));
         assert_eq!(
-            find_setting(&updated, "EmuCore", "EnableDiscordPresence")
-                .unwrap()
-                .as_deref(),
+            find_setting(&updated, "EmuCore", "EnableDiscordPresence").as_deref(),
             Some("false")
         );
     }
@@ -410,9 +408,7 @@ mod tests {
         let text = "[EmuCore]\nEnableDiscordPresence = 1\n";
         let disabled = set_setting(text, "EmuCore", "EnableDiscordPresence", "false");
         assert_eq!(
-            find_setting(&disabled, "EmuCore", "EnableDiscordPresence")
-                .unwrap()
-                .as_deref(),
+            find_setting(&disabled, "EmuCore", "EnableDiscordPresence").as_deref(),
             Some("false")
         );
         let restored = set_setting(&disabled, "EmuCore", "EnableDiscordPresence", "1");
