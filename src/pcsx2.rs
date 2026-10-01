@@ -334,37 +334,6 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
     output
 }
 
-fn remove_setting(text: &str, section: &str, key: &str) -> String {
-    let mut in_section = false;
-    let mut removed = false;
-    let mut lines = Vec::new();
-
-    for raw in text.split_inclusive('\n') {
-        let (body, _) = split_eol(raw);
-        let trimmed = body.trim();
-
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            in_section = trimmed[1..trimmed.len() - 1].trim() == section;
-        }
-
-        if in_section {
-            if let Some((name, _)) = body.split_once('=') {
-                if name.trim() == key {
-                    removed = true;
-                    continue;
-                }
-            }
-        }
-
-        lines.push(raw);
-    }
-
-    if removed {
-        lines.concat()
-    } else {
-        text.to_string()
-    }
-}
 
 fn split_eol(value: &str) -> (&str, &str) {
     if let Some(body) = value.strip_suffix("\r\n") {
@@ -431,13 +400,6 @@ mod tests {
         assert!(updated.ends_with("[EmuCore]\nEnableDiscordPresence = false\n"));
     }
 
-    #[test]
-    fn removes_setting() {
-        let text = "[EmuCore]\nEnableDiscordPresence = false\nOther = 1\n";
-        let updated = remove_setting(text, "EmuCore", "EnableDiscordPresence");
-        assert!(!updated.contains("EnableDiscordPresence"));
-        assert!(updated.contains("Other = 1"));
-    }
 
     #[test]
     fn preserves_the_original_value_for_restore() {
