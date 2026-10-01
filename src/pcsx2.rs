@@ -99,12 +99,13 @@ fn restore_backup(backup: &Backup) -> Result<()> {
     // Only undo our change if the effective setting is still disabled. If
     // somebody changed it manually after setup, leave their newer choice
     // alone instead of overwriting it during uninstall.
-    let current_enabled = current_raw
-        .as_deref()
-        .map(parse_bool)
-        .transpose()
-        .with_context(|| format!("parsing {KEY} in {}", path.display()))?
-        .unwrap_or(false);
+    let Some(current_raw) = current_raw else {
+        // The setting was removed while the app was installed. Respect that
+        // manual change rather than recreating it during uninstall.
+        return Ok(());
+    };
+    let current_enabled = parse_bool(&current_raw)
+        .with_context(|| format!("parsing {KEY} in {}", path.display()))?;
 
     if !current_enabled {
         let new_text = match backup.original_value.as_deref() {
