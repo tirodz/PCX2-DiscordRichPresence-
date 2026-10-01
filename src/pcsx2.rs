@@ -240,47 +240,59 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
     let mut in_section = false;
     let mut section_found = false;
 
-    for index in 0..lines.len() {
-        let (body, eol) = split_eol(&lines[index]);
-        let trimmed = body.trim();
+    for (index, line) in lines.iter_mut().enumerate() {
+        let replacement = {
+            let (body, eol) = split_eol(line);
+            let trimmed = body.trim();
 
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            in_section = trimmed[1..trimmed.len() - 1].trim() == section;
-            if in_section {
-                section_found = true;
-            }
-            continue;
-        }
-
-        if in_section {
-            if let Some((name, _)) = body.split_once('=') {
-                if name.trim() == key {
-                    let eq = body.find('=').expect("split_once found =");
-                    let after = &body[eq + 1..];
-                    let comment_offset = match (after.find(';'), after.find('#')) {
-                        (Some(a), Some(b)) => Some(a.min(b)),
-                        (Some(a), None) => Some(a),
-                        (None, Some(b)) => Some(b),
-                        (None, None) => None,
-                    };
-                    let suffix = if let Some(offset) = comment_offset {
-                        let before_comment = &after[..offset];
-                        let whitespace_start = before_comment
-                            .char_indices()
-                            .rev()
-                            .take_while(|(_, ch)| ch.is_whitespace())
-                            .last()
-                            .map(|(index, _)| index)
-                            .unwrap_or(before_comment.len());
-                        &after[whitespace_start..]
-                    } else {
-                        ""
-                    };
-                    lines[index] = format!("{} {}{}{}", &body[..=eq], value, suffix, eol);
-                    return lines.concat();
+            if trimmed.starts_with('[') && trimmed.ends_with(']') {
+                in_section = trimmed[1..trimmed.len() - 1].trim() == section;
+                if in_section {
+                    section_found = true;
                 }
+                None
+            } else if in_section {
+                if let Some((name, _)) = body.split_once('=') {
+                    if name.trim() == key {
+                        let eq = body.find('=').expect("split_once found =");
+                        let after = &body[eq + 1..];
+                        let comment_offset = match (after.find(';'), after.find('#')) {
+                            (Some(a), Some(b)) => Some(a.min(b)),
+                            (Some(a), None) => Some(a),
+                            (None, Some(b)) => Some(b),
+                            (None, None) => None,
+                        };
+                        let suffix = if let Some(offset) = comment_offset {
+                            let before_comment = &after[..offset];
+                            let whitespace_start = before_comment
+                                .char_indices()
+                                .rev()
+                                .take_while(|(_, ch)| ch.is_whitespace())
+                                .last()
+                                .map(|(index, _)| index)
+                                .unwrap_or(before_comment.len());
+                            &after[whitespace_start..]
+                        } else {
+                            ""
+                        };
+                        Some(format!("{} {}{}{}", &body[..=eq], value, suffix, eol))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
             }
+        };
+
+        if let Some(replacement) = replacement {
+            *line = replacement;
+            return lines.concat();
         }
+
+        let _ = index;
     }
 
     let setting = format!("{} = {}{}", key, value, newline);
@@ -289,8 +301,8 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
         let mut section_end = lines.len();
         let mut in_section = false;
 
-        for index in 0..lines.len() {
-            let (body, _) = split_eol(&lines[index]);
+        for (index, line) in lines.iter().enumerate() {
+            let (body, _) = split_eol(line);
             let trimmed = body.trim();
 
             if trimmed.starts_with('[') && trimmed.ends_with(']') {
@@ -370,10 +382,10 @@ mod tests {
 
     #[test]
     fn parses_boolean_values() {
-        assert_eq!(parse_bool("true").unwrap(), true);
-        assert_eq!(parse_bool("FALSE").unwrap(), false);
-        assert_eq!(parse_bool("1").unwrap(), true);
-        assert_eq!(parse_bool("0").unwrap(), false);
+        assert!(parse_bool("true").unwrap());
+        assert!(!parse_bool("FALSE").unwrap());
+        assert!(parse_bool("1").unwrap());
+        assert!(!parse_bool("0").unwrap());
         assert!(parse_bool("maybe").is_err());
     }
 
