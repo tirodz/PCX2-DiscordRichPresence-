@@ -334,7 +334,6 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
     output
 }
 
-
 fn split_eol(value: &str) -> (&str, &str) {
     if let Some(body) = value.strip_suffix("\r\n") {
         (body, "\r\n")
@@ -347,7 +346,7 @@ fn split_eol(value: &str) -> (&str, &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::{find_setting, fingerprint, parse_bool, remove_setting, set_setting};
+    use super::{find_setting, fingerprint, parse_bool, set_setting};
 
     #[test]
     fn parses_boolean_values() {
@@ -399,7 +398,6 @@ mod tests {
         let updated = set_setting(text, "EmuCore", "EnableDiscordPresence", "false");
         assert!(updated.ends_with("[EmuCore]\nEnableDiscordPresence = false\n"));
     }
-
 
     #[test]
     fn preserves_the_original_value_for_restore() {
