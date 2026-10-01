@@ -94,10 +94,10 @@ pub fn uninstall() -> anyhow::Result<()> {
 }
 
 fn control_path(name: &str) -> anyhow::Result<std::path::PathBuf> {
-    Ok(std::env::current_exe()?
+    std::env::current_exe()?
         .parent()
         .map(|p| p.join(name))
-        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))?)
+        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))
 }
 
 pub fn request_stop() -> anyhow::Result<()> {
@@ -132,4 +132,33 @@ pub fn stop_requested() -> anyhow::Result<bool> {
 
 pub fn installed() -> anyhow::Result<bool> {
     windows::installed()
+}
+
+/// Read the PID left by a running helper, if the file exists and parses.
+pub fn read_pid() -> Option<u32> {
+    let path = control_path(".pid").ok()?;
+    let text = std::fs::read_to_string(path).ok()?;
+    text.trim().parse().ok()
+}
+
+/// Check whether a process with the given PID is still alive.
+#[cfg(windows)]
+pub fn pid_alive(pid: u32) -> bool {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if handle.is_null() {
+            false
+        } else {
+            CloseHandle(handle);
+            true
+        }
+    }
+}
+
+#[cfg(not(windows))]
+pub fn pid_alive(pid: u32) -> bool {
+    std::path::Path::new(&format!("/proc/{pid}")).exists()
 }

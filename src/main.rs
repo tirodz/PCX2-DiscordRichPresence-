@@ -3,31 +3,25 @@
 mod autostart;
 mod config;
 mod discord;
+mod helper;
+mod logging;
 mod metadata;
 mod pine;
+mod setup;
 mod state;
-
-use std::thread;
-use std::time::Duration;
 
 use anyhow::Result;
 
 use config::Config;
-use discord::DiscordPublisher;
-use metadata::CoverCache;
-use pine::PineClient;
-use state::RuntimeState;
 
 fn main() -> Result<()> {
     match std::env::args().nth(1).as_deref() {
         Some("--install") => {
             autostart::install()?;
             autostart::clear_stop_request()?;
-            return Ok(());
         }
         Some("--uninstall") => {
             autostart::uninstall()?;
-            return Ok(());
         }
         Some("--status") => {
             println!(
@@ -38,76 +32,37 @@ fn main() -> Result<()> {
                     "disabled"
                 }
             );
-            return Ok(());
+            match helper::running_pid() {
+                Some(pid) => println!("Background helper: running (pid {pid})"),
+                None => println!("Background helper: not running"),
+            }
         }
-        Some("--background") | None => {}
+        Some("--background") => return helper::run(),
+        Some("--setup") => return setup::run_wizard(),
+        Some("--settings") => return setup::run_settings(),
         Some("--help") | Some("-h") => {
             println!("PCSX2 Discord Rich Presence");
             println!();
-            println!("  --install    Start automatically when Windows logs in");
-            println!("  --uninstall  Remove automatic startup");
-            println!("  --status     Show automatic startup status");
-            return Ok(());
+            println!("  (no arguments)  Open the setup wizard or settings");
+            println!("  --setup         Run the first-time setup wizard");
+            println!("  --settings      Open the settings window");
+            println!("  --background    Run the background presence helper");
+            println!("  --install       Start automatically when Windows logs in");
+            println!("  --uninstall     Remove automatic startup and stop the helper");
+            println!("  --status        Show startup and helper status");
         }
         Some(argument) => {
-            anyhow::bail!("unknown argument: {argument}");
+            anyhow::bail!("unknown argument: {argument} (try --help)");
         }
-    }
-
-    run()
-}
-
-fn run() -> Result<()> {
-    autostart::clear_stop_request()?;
-    autostart::clear_pid()?;
-    let config = Config::load_or_create()?;
-
-    if config.discord.client_id.trim().is_empty() {
-        return Ok(());
-    }
-
-    autostart::write_pid()?;
-    let covers = CoverCache::new()?;
-    let mut discord = DiscordPublisher::new(config.discord.client_id.clone());
-    let mut previous = RuntimeState::Offline;
-
-    loop {
-        if autostart::stop_requested()? {
-            let _ = discord.clear();
-            let _ = autostart::clear_pid();
-            return Ok(());
-        }
-
-        match PineClient::connect(&config.pine.host, config.pine.port) {
-            Ok(mut pine) => match pine.read_state() {
-                Ok(current) => {
-                    if current != previous {
-                        if let Err(error) = discord.publish(&current, &covers) {
-                            eprintln!("Discord presence update failed: {error:#}");
-                        }
-                        previous = current;
-                    } else if let Err(error) = discord.publish(&current, &covers) {
-                        eprintln!("Discord presence refresh failed: {error:#}");
-                    }
-                }
-                Err(error) => {
-                    eprintln!("PINE query failed: {error}");
-                    if previous != RuntimeState::Offline {
-                        let _ = discord.clear();
-                        previous = RuntimeState::Offline;
-                    }
-                }
-            },
-            Err(_) => {
-                if previous != RuntimeState::Offline {
-                    let _ = discord.clear();
-                    previous = RuntimeState::Offline;
-                }
-                thread::sleep(Duration::from_secs(config.retry_seconds.max(1)));
-                continue;
+        None => {
+            // Double-click: set up on first run, adjust settings afterwards.
+            let configured = Config::load().map(|c| c.is_configured()).unwrap_or(false);
+            if configured {
+                return setup::run_settings();
             }
+            return setup::run_wizard();
         }
-
-        thread::sleep(Duration::from_secs(config.poll_seconds.max(1)));
     }
+
+    Ok(())
 }

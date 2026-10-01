@@ -224,7 +224,8 @@ mod tests {
 
     #[test]
     fn defaults_apply_to_partial_files() {
-        let parsed: Config = toml::from_str("[discord]\nclient_id = \"123456789012345678\"\n").unwrap();
+        let parsed: Config =
+            toml::from_str("[discord]\nclient_id = \"123456789012345678\"\n").unwrap();
         assert_eq!(parsed.pine.host, "127.0.0.1");
         assert_eq!(parsed.pine.port, 28011);
         assert_eq!(parsed.poll_seconds, 2);

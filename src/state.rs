@@ -4,7 +4,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 pub enum RuntimeState {
     Offline,
     Idle,
-    Bios { paused: bool },
+    Bios {
+        paused: bool,
+    },
     Game {
         title: String,
         serial: String,
