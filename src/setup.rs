@@ -560,6 +560,12 @@ impl Wizard {
         ui.add_space(8.0);
         ui.label(
             egui::RichText::new(
+                "PCSX2's own Discord presence is disabled during setup so this app can be the                  only publisher. The previous setting is restored when you uninstall.",
+            )
+            .small(),
+        );
+        ui.label(
+            egui::RichText::new(
                 "The helper runs in the background with no window and waits for PCSX2. \
                  You can change all of this later from the settings window.",
             )
@@ -759,6 +765,13 @@ impl eframe::App for Settings {
                 ui.checkbox(
                     &mut self.form.autostart,
                     "Start automatically when I sign in to Windows",
+                );
+                ui.add_space(6.0);
+                ui.label(
+                    egui::RichText::new(
+                        "The app keeps PCSX2's own Discord presence disabled while it is installed                          so the custom activity is the only one being published.",
+                    )
+                    .small(),
                 );
                 ui.add_space(10.0);
                 ui.separator();
