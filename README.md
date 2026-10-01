@@ -38,7 +38,9 @@ Download the latest release from the
 
 The installer does not need administrator rights. It puts the app in your user
 profile, adds a Start Menu entry, and offers to run the setup wizard when it
-finishes.
+finishes. During setup, the app also disables PCSX2's own Discord presence so
+the custom activity is the only one being published. The original PCSX2 setting
+is restored when you uninstall.
 
 ## First-run setup
 
@@ -81,8 +83,9 @@ is back.
 ## Cover artwork
 
 Covers come from the [xlenore/ps2-covers](https://github.com/xlenore/ps2-covers)
-database, matched by the game's serial (SLUS/SCES/SLPS/...). Discord loads the
-cover through its public URL, so your friends see the same image you do.
+database, matched by the game's serial (SLUS/SCES/SLPS/...). Because Discord
+renders a Rich Presence large image as a square, the public cover URL is
+wrapped in a square, letterboxed rendition so portrait box art is not cropped.
 Covers are cached locally, serials without a cover are remembered instead of
 re-fetched, and a missing cover never breaks the text presence - the PCSX2
 logo is used as a fallback.
