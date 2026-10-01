@@ -47,13 +47,11 @@ fn run_window<A: eframe::App + 'static>(title: &str, app: A) -> Result<()> {
 }
 
 fn window_icon() -> Option<egui::IconData> {
-    let png = include_bytes!("../assets/icon.png");
-    let image = image::load_from_memory(png).ok()?.to_rgba8();
-    let (width, height) = image.dimensions();
+    const SIZE: u32 = 64;
     Some(egui::IconData {
-        rgba: image.into_raw(),
-        width,
-        height,
+        rgba: crate::icon::render_icon(SIZE as usize),
+        width: SIZE,
+        height: SIZE,
     })
 }
 
