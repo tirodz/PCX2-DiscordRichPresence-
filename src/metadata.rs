@@ -244,7 +244,9 @@ mod tests {
 
         // Known cover: fetched once, then served from the cache.
         let url = cache.cover_url_from(&base, "SLUS-20946").unwrap();
-        assert!(url.as_deref().unwrap().ends_with("/SLUS-20946.jpg"));
+        let first_url = url.as_deref().unwrap();
+        assert!(first_url.starts_with("https://wsrv.nl/?"));
+        assert!(first_url.contains("SLUS-20946.jpg"));
         assert!(dir.join("SLUS-20946.jpg").exists());
 
         // Unknown cover: remembered as missing.
