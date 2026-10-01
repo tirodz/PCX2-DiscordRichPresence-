@@ -35,14 +35,19 @@ jobs:
         shell: pwsh
         run: |
           $candidates = @(
-            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
-            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+            "$env:ChocolateyInstall\bin\ISCC.exe"
           )
-          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          $iscc = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 
           if (-not $iscc) {
             choco install innosetup --no-progress --yes
-            $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+            $iscc = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+          }
+
+          if (-not $iscc) {
+            $iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source
           }
 
           if (-not $iscc) {
