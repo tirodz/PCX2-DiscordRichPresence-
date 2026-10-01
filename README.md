@@ -5,7 +5,7 @@ you're playing, how long you've been playing it, and whether you're paused -
 with the actual PS2 cover art.
 
 It talks to PCSX2 through PINE, the IPC interface built into the emulator. No
-window scraping, no memory reading, no modified PCSX2 files.
+window scraping, no memory reading, and no PCSX2 binary patching.
 
 ## What it looks like
 
@@ -32,8 +32,8 @@ reset it, closing the game does.
 Download the latest release from the
 [Releases](https://github.com/tirodz/PCX2-DiscordRichPresence-/releases) page:
 
-- **`PCSX2-DiscordRichPresence-Setup.exe`** - installer (recommended)
-- **`PCSX2-DiscordRichPresence-*-windows-x64.zip`** - portable build, just
+- **`PCSX2-DiscordRichPresence-v0.1.0-Setup.exe`** - installer (recommended)
+- **`PCSX2-DiscordRichPresence-v0.1.0-windows-x64.zip`** - portable build, just
   unzip and run
 
 The installer does not need administrator rights. It puts the app in your user
@@ -78,7 +78,8 @@ background (no window, no console), and waits for PCSX2:
 - Quit PCSX2 -> the Discord activity clears
 
 If Discord isn't running, the helper simply waits and publishes once Discord
-is back.
+is back. If PCSX2 was already running when you finish setup, restart PCSX2 so
+its updated Discord setting is picked up.
 
 ## Cover artwork
 
