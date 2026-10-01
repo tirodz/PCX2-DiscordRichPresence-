@@ -35,13 +35,8 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Set up PCSX2 Discord Rich Prese
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--uninstall"; Flags: runhidden skipifdoesntexist
 
 [UninstallDelete]
-Type: files
-Name: "{app}\config.toml"
-Type: files
-Name: "{app}\.stop"
-Type: files
-Name: "{app}\.pid"
-Type: files
-Name: "{app}\.pcsx2-discord-rpc-backup.toml"
-Type: files
-Name: "{app}\helper.log"
+Type: files; Name: "{app}\config.toml"
+Type: files; Name: "{app}\.stop"
+Type: files; Name: "{app}\.pid"
+Type: files; Name: "{app}\.pcsx2-discord-rpc-backup.toml"
+Type: files; Name: "{app}\helper.log"
