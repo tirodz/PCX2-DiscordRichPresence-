@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-The v0.1.1 changes below are prepared in `main` but are not considered released until Windows CI passes and the installer, portable ZIP, and checksums are attached to the GitHub Release. The release workflow now requires an explicit Actions-secret confirmation that the `ps2-bios` asset was verified in the project Discord application.
+The v0.1.1 changes below are prepared in `main` but are not considered released until Windows CI passes and the installer, portable ZIP, and checksums are attached to the GitHub Release. Publishing is gated by the release workflow, including confirmation that the `ps2-bios` asset was verified in the project Discord application.
 
 ## 0.1.1 - 2026-10-02
 
