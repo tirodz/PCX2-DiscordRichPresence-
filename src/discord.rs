@@ -13,27 +13,18 @@ const PCSX2_LOGO: &str =
     "https://raw.githubusercontent.com/PCSX2/pcsx2/master/bin/resources/icons/AppIconLarge.png";
 const PS2_BIOS_IMAGE: &str =
     "https://wsrv.nl/?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftirodz%2FPCX2-DiscordRichPresence-%2Fmain%2Fassets%2Fbios%2Fps2-bios.png&w=1024&h=1024&fit=contain&output=png&q=100&maxage=604800";
-const PS2_BIOS_ASSET_KEY: &str = "ps2-bios";
-
 fn bios_image() -> &'static str {
-    bios_image_for(
-        option_env!("PCSX2_DISCORD_CLIENT_ID"),
-        option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY"),
-    )
+    bios_image_for(option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY"))
 }
 
-fn bios_image_for(
-    client_id: Option<&'static str>,
-    asset_key: Option<&'static str>,
-) -> &'static str {
+fn bios_image_for(asset_key: Option<&'static str>) -> &'static str {
     if let Some(key) = asset_key.filter(|key| !key.trim().is_empty()) {
         return key;
     }
 
-    if client_id.filter(|value| !value.trim().is_empty()).is_some() {
-        return PS2_BIOS_ASSET_KEY;
-    }
-
+    // Discord supports publicly reachable image URLs for Rich Presence assets.
+    // Use the project-hosted BIOS artwork by default so public builds do not
+    // depend on a separately uploaded Developer Portal asset.
     PS2_BIOS_IMAGE
 }
 
@@ -228,7 +219,7 @@ impl DiscordPublisher {
 
 #[cfg(test)]
 mod tests {
-    use super::{bios_image_for, DiscordPublisher, PS2_BIOS_ASSET_KEY, PS2_BIOS_IMAGE};
+    use super::{bios_image_for, DiscordPublisher, PS2_BIOS_IMAGE};
     use crate::state::RuntimeState;
 
     fn game(paused: bool) -> RuntimeState {
@@ -308,26 +299,25 @@ mod tests {
     }
 
     #[test]
-    fn public_build_uses_registered_bios_asset_key() {
-        assert_eq!(PS2_BIOS_ASSET_KEY, "ps2-bios");
-        assert_eq!(bios_image_for(Some("123456"), None), PS2_BIOS_ASSET_KEY);
+    fn public_build_uses_project_bios_image_url() {
+        assert_eq!(bios_image_for(None), PS2_BIOS_IMAGE);
     }
 
     #[test]
     fn configured_bios_asset_key_overrides_the_default() {
         assert_eq!(
-            bios_image_for(Some("123456"), Some("custom-ps2-art")),
+            bios_image_for(Some("custom-ps2-art")),
             "custom-ps2-art"
         );
         assert_eq!(
-            bios_image_for(None, Some("custom-ps2-art")),
+            bios_image_for(Some("custom-ps2-art")),
             "custom-ps2-art"
         );
     }
 
     #[test]
     fn self_built_binary_without_asset_key_uses_public_image_url() {
-        assert_eq!(bios_image_for(None, None), PS2_BIOS_IMAGE);
+        assert_eq!(bios_image_for(None), PS2_BIOS_IMAGE);
     }
 
     #[test]
