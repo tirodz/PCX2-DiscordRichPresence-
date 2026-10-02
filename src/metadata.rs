@@ -8,8 +8,8 @@ use reqwest::{blocking::Client, Url};
 
 const COVER_BASE: &str =
     "https://raw.githubusercontent.com/xlenore/ps2-covers/main/covers/default/";
-/// Discord Rich Presence renders the large image as a square, so send a
-/// square, letterboxed rendition rather than letting Discord crop the cover.
+/// Discord Rich Presence renders the large image as a square. Use a smart
+/// square crop so portrait PS2 covers fill the card more naturally without stretching.
 const DISCORD_COVER_PROXY: &str = "https://wsrv.nl/";
 const DISCORD_COVER_SIZE: &str = "1024";
 
@@ -146,8 +146,8 @@ fn discord_cover_url(source_url: &str) -> Result<String> {
         .append_pair("url", source_url)
         .append_pair("w", DISCORD_COVER_SIZE)
         .append_pair("h", DISCORD_COVER_SIZE)
-        .append_pair("fit", "contain")
-        .append_pair("cbg", "black")
+        .append_pair("fit", "cover")
+        .append_pair("a", "attention")
         .append_pair("output", "jpg")
         .append_pair("q", "90")
         .append_pair("maxage", "604800");
@@ -196,7 +196,8 @@ mod tests {
         assert!(url.starts_with("https://wsrv.nl/?"));
         assert!(url.contains("w=1024"));
         assert!(url.contains("h=1024"));
-        assert!(url.contains("fit=contain"));
+        assert!(url.contains("fit=cover"));
+        assert!(url.contains("a=attention"));
         assert!(url.contains("output=jpg"));
         assert!(url.contains("SLUS-20946.jpg"));
     }
