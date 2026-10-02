@@ -30,10 +30,7 @@ fn bios_image_for(
         return key;
     }
 
-    if client_id
-        .filter(|value| !value.trim().is_empty())
-        .is_some()
-    {
+    if client_id.filter(|value| !value.trim().is_empty()).is_some() {
         return PS2_BIOS_ASSET_KEY;
     }
 
