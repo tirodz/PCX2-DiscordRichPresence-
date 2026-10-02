@@ -4,13 +4,18 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   windows:
+    if: github.ref_type == 'tag' || (github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, '[publish-'))
     runs-on: windows-latest
+    env:
+      PCSX2_DISCORD_CLIENT_ID: ${{ secrets.PCSX2_DISCORD_CLIENT_ID }}
 
     steps:
       - name: Checkout
@@ -19,8 +24,18 @@ jobs:
       - name: Release metadata
         id: meta
         shell: pwsh
+        env:
+          RELEASE_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "v0.1.0" }
+          if ($env:GITHUB_REF_TYPE -eq "tag") {
+            $version = $env:GITHUB_REF_NAME
+          } else {
+            $match = [regex]::Match($env:RELEASE_MESSAGE, '\[publish-(v[0-9]+\.[0-9]+\.[0-9]+)\]')
+            if (-not $match.Success) {
+              throw "Release marker not found in commit message."
+            }
+            $version = $match.Groups[1].Value
+          }
           "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Rust
