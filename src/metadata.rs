@@ -207,10 +207,11 @@ mod tests {
         let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let port = listener.local_addr().unwrap().port();
         let handle = thread::spawn(move || {
-            // This test performs exactly three requests: a cache miss, a 404,
-            // and a normalized serial cache hit. Exit after those requests so
+            // This test performs exactly two requests: a cache hit, then a 404.
+            // The normalized serial check below is served from the local cache.
+            // Exit after those requests so
             // the test process can terminate cleanly.
-            for stream in listener.incoming().take(3) {
+            for stream in listener.incoming().take(2) {
                 let mut stream = match stream {
                     Ok(s) => s,
                     Err(_) => break,
