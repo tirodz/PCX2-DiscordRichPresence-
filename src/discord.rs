@@ -216,7 +216,7 @@ impl DiscordPublisher {
 
 #[cfg(test)]
 mod tests {
-    use super::{DiscordPublisher, PS2_BIOS_IMAGE};
+    use super::{DiscordPublisher, PS2_BIOS_ASSET_KEY, PS2_BIOS_IMAGE};
     use crate::state::RuntimeState;
 
     fn game(paused: bool) -> RuntimeState {
