@@ -25,8 +25,7 @@ reset it, closing the game does.
 - Windows 10 or 11 (64-bit)
 - PCSX2 2.x (any recent Qt build, installed or portable)
 - The Discord desktop app
-- The Discord desktop app
-- A Discord application ID only for self-built releases when the project ID is not supplied
+- A Discord application ID only for self-built binaries when the project ID is not supplied
 
 ## Installation
 
@@ -50,10 +49,10 @@ The public release is designed to keep setup simple:
 
 1. **PCSX2 location** - the app tries to detect PCSX2 automatically. If it cannot find it, browse to `pcsx2-qt.exe` once.
 2. **PCSX2 integration** - the app configures the required PINE settings automatically and preserves the previous PCSX2 values for uninstall.
-3. **Discord** - public builds can use the project's application ID automatically. Self-built binaries can provide `PCSX2_DISCORD_CLIENT_ID` at build time.
+3. **Discord** - public builds use the project's application ID automatically.
 4. **Confirm** - choose whether the helper should start with Windows and start right away.
 
-Normal users do not need to know the PINE port or open PCSX2's Advanced settings. Advanced PINE and Discord fields remain available in the settings window for troubleshooting.
+Normal users do not need to know the PINE port, open PCSX2's Advanced settings, or create a Discord Developer Application. Manual PINE and Discord fields remain available in the settings window for development and troubleshooting.
 
 ## Everyday use
 
@@ -81,8 +80,7 @@ the text presence - the PCSX2 logo is used as a fallback.
 
 ## Validation status
 
-The project has automated PINE, state, cover-cache, timestamp and packaging checks.
-The remaining release check is a live Windows session with PCSX2 and Discord, including visual verification of the PS2 BIOS artwork and game-cover framing in the Rich Presence card.
+The project has automated PINE, state, cover-cache, timestamp, configuration, and packaging checks. A live Windows session with PCSX2 and Discord is still required to visually verify the PS2 BIOS artwork and game-cover framing in the Rich Presence card.
 
 ## Troubleshooting
 
