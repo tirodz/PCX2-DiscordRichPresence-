@@ -554,7 +554,7 @@ fn split_eol(value: &str) -> (&str, &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::{find_setting, fingerprint, parse_bool, remove_setting, set_setting};
+    use super::{find_setting, fingerprint, parse_bool, set_setting};
 
     #[test]
     fn parses_boolean_values() {
