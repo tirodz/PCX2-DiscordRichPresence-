@@ -11,6 +11,8 @@ use crate::state::{unix_now, RuntimeState};
 
 const PCSX2_LOGO: &str =
     "https://raw.githubusercontent.com/PCSX2/pcsx2/master/bin/resources/icons/AppIconLarge.png";
+const PS2_BIOS_IMAGE: &str =
+    "https://raw.githubusercontent.com/tirodz/PCX2-DiscordRichPresence-/8eae0ea857bd37f9469f29a923fe36a1c121ab41/assets/bios/ps2-bios.png";
 
 /// How long a published activity is considered fresh before it is sent
 /// again, and how long to wait before retrying a failed Discord connection.
@@ -117,16 +119,16 @@ impl DiscordPublisher {
             RuntimeState::Offline => return None,
             RuntimeState::Idle => {
                 self.reset_game_session();
-                ("PCSX2".to_string(), "At the Main Menu".to_string(), None)
+                ("PCSX2".to_string(), "🏠 At the Main Menu".to_string(), None)
             }
             RuntimeState::Bios { paused } => {
                 self.reset_game_session();
                 (
                     "PlayStation 2".to_string(),
                     if *paused {
-                        "System Menu · Paused".to_string()
+                        "⏸ System Menu".to_string()
                     } else {
-                        "System Menu".to_string()
+                        "⚙ System Menu".to_string()
                     },
                     None,
                 )
@@ -147,9 +149,9 @@ impl DiscordPublisher {
                 (
                     title.clone(),
                     if *paused {
-                        "Paused on PCSX2".to_string()
+                        "⏸ Paused on PCSX2".to_string()
                     } else {
-                        "Playing on PCSX2".to_string()
+                        "🎮 Playing on PCSX2".to_string()
                     },
                     self.session_start,
                 )
@@ -165,6 +167,10 @@ impl DiscordPublisher {
                 .large_text(details)
                 .small_image(PCSX2_LOGO)
                 .small_text("PCSX2")
+        } else if matches!(state, RuntimeState::Bios { .. }) {
+            Assets::new()
+                .large_image(PS2_BIOS_IMAGE)
+                .large_text("PlayStation 2")
         } else {
             Assets::new().large_image(PCSX2_LOGO).large_text("PCSX2")
         };
