@@ -529,11 +529,7 @@ fn remove_setting(text: &str, section: &str, key: &str) -> String {
             return true;
         }
 
-        if !in_section
-            || trimmed.is_empty()
-            || trimmed.starts_with(';')
-            || trimmed.starts_with('#')
-        {
+        if !in_section || trimmed.is_empty() || trimmed.starts_with(';') || trimmed.starts_with('#') {
             return true;
         }
 
