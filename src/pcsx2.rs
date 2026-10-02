@@ -15,6 +15,21 @@ const SECTION: &str = "EmuCore";
 const KEY: &str = "EnableDiscordPresence";
 const BACKUP_FILE: &str = ".pcsx2-discord-rpc-backup.toml";
 
+const PINE_ENABLE_KEY: &str = "EnablePINE";
+const PINE_SLOT_KEY: &str = "PINESlot";
+const PINE_BACKUP_FILE: &str = ".pcsx2-discord-pine-backup.toml";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct PineBackup {
+    config_path: String,
+    original_exists: bool,
+    original_enable: Option<String>,
+    original_slot: Option<String>,
+    modified_fingerprint: u64,
+}
+
+
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Backup {
     config_path: String,
@@ -109,6 +124,169 @@ fn restore_backup(backup: &Backup) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Enable PCSX2's PINE server using the same persistent INI settings as
+/// PCSX2 itself. The previous values are retained for safe uninstall.
+pub fn configure_pine(executable: &Path) -> Result<u16> {
+    let config_path = preferred_config_path(executable)
+        .ok_or_else(|| anyhow::anyhow!("could not determine the PCSX2 configuration path"))?;
+    let backup_path = pine_backup_path()?;
+    let existing_backup = load_pine_backup(&backup_path)?;
+
+    if let Some(backup) = existing_backup.as_ref() {
+        if Path::new(&backup.config_path) != config_path {
+            restore_pine_backup(backup)?;
+            remove_backup(&backup_path)?;
+        }
+    }
+
+    let original_exists = config_path.is_file();
+    let current_text = if original_exists {
+        fs::read_to_string(&config_path)
+            .with_context(|| format!("reading {}", config_path.display()))?
+    } else {
+        String::new()
+    };
+
+    let current_enable = find_setting(&current_text, SECTION, PINE_ENABLE_KEY);
+    let current_slot = find_setting(&current_text, SECTION, PINE_SLOT_KEY);
+
+    let managed_unchanged = existing_backup
+        .as_ref()
+        .filter(|backup| Path::new(&backup.config_path) == config_path)
+        .is_some_and(|backup| fingerprint(&current_text) == backup.modified_fingerprint);
+
+    let (original_enable, original_slot, original_exists_for_backup) = if managed_unchanged {
+        let backup = existing_backup.as_ref().expect("managed backup exists");
+        (
+            backup.original_enable.clone(),
+            backup.original_slot.clone(),
+            backup.original_exists,
+        )
+    } else {
+        (current_enable.clone(), current_slot.clone(), original_exists)
+    };
+
+    let slot = current_slot
+        .as_deref()
+        .and_then(|value| value.trim().parse::<u16>().ok())
+        .filter(|value| *value != 0)
+        .unwrap_or(28011);
+
+    let mut new_text = set_setting(&current_text, SECTION, PINE_ENABLE_KEY, "true");
+    new_text = set_setting(&new_text, SECTION, PINE_SLOT_KEY, &slot.to_string());
+
+    if new_text != current_text || !original_exists {
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(&config_path, &new_text)
+            .with_context(|| format!("writing {}", config_path.display()))?;
+    }
+
+    let backup = PineBackup {
+        config_path: config_path.to_string_lossy().into_owned(),
+        original_exists: original_exists_for_backup,
+        original_enable,
+        original_slot,
+        modified_fingerprint: fingerprint(&new_text),
+    };
+    fs::write(&backup_path, toml::to_string_pretty(&backup)?)
+        .with_context(|| format!("writing {}", backup_path.display()))?;
+
+    Ok(slot)
+}
+
+pub fn restore_pine() -> Result<()> {
+    let backup_path = pine_backup_path()?;
+    let Some(backup) = load_pine_backup(&backup_path)? else {
+        return Ok(());
+    };
+
+    restore_pine_backup(&backup)?;
+    remove_backup(&backup_path)?;
+    Ok(())
+}
+
+fn restore_pine_backup(backup: &PineBackup) -> Result<()> {
+    let path = PathBuf::from(&backup.config_path);
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let text = fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+    if fingerprint(&text) != backup.modified_fingerprint {
+        // The user changed the PCSX2 config after our takeover. Keep their newer state.
+        return Ok(());
+    }
+
+    if !backup.original_exists {
+        fs::remove_file(&path).with_context(|| format!("removing {}", path.display()))?;
+        return Ok(());
+    }
+
+    let mut restored = match backup.original_enable.as_deref() {
+        Some(value) => set_setting(&text, SECTION, PINE_ENABLE_KEY, value),
+        None => remove_setting(&text, SECTION, PINE_ENABLE_KEY),
+    };
+    restored = match backup.original_slot.as_deref() {
+        Some(value) => set_setting(&restored, SECTION, PINE_SLOT_KEY, value),
+        None => remove_setting(&restored, SECTION, PINE_SLOT_KEY),
+    };
+
+    if restored != text {
+        fs::write(&path, restored).with_context(|| format!("writing {}", path.display()))?;
+    }
+    Ok(())
+}
+
+fn pine_backup_path() -> Result<PathBuf> {
+    std::env::current_exe()?
+        .parent()
+        .map(|path| path.join(PINE_BACKUP_FILE))
+        .ok_or_else(|| anyhow::anyhow!("executable directory is unavailable"))
+}
+
+fn load_pine_backup(path: &Path) -> Result<Option<PineBackup>> {
+    if !path.exists() {
+        return Ok(None);
+    }
+    let text = fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+    Ok(Some(
+        toml::from_str(&text).with_context(|| format!("parsing {}", path.display()))?,
+    ))
+}
+
+fn preferred_config_path(executable: &Path) -> Option<PathBuf> {
+    if let Some(existing) = locate_config(executable) {
+        return Some(existing);
+    }
+
+    let app_root = executable.parent()?;
+    if app_root.join("portable.txt").exists() || app_root.join("portable.ini").exists() {
+        let data_root = match fs::read_to_string(app_root.join("portable.txt")) {
+            Ok(value) if !value.trim().is_empty() => {
+                let value = PathBuf::from(value.trim());
+                if value.is_absolute() {
+                    value
+                } else {
+                    app_root.join(value)
+                }
+            }
+            _ => app_root.to_path_buf(),
+        };
+        return Some(data_root.join("inis").join("PCSX2.ini"));
+    }
+
+    let profile = std::env::var_os("USERPROFILE").map(PathBuf::from)?;
+    Some(
+        profile
+            .join("Documents")
+            .join("PCSX2")
+            .join("inis")
+            .join("PCSX2.ini"),
+    )
 }
 
 fn locate_config(executable: &Path) -> Option<PathBuf> {
@@ -332,6 +510,33 @@ fn set_setting(text: &str, section: &str, key: &str, value: &str) -> String {
     }
     output.push_str(&format!("[{}]{}{}", section, newline, setting));
     output
+}
+
+fn remove_setting(text: &str, section: &str, key: &str) -> String {
+    let mut lines: Vec<String> = text.split_inclusive('\n').map(str::to_string).collect();
+    let mut in_section = false;
+
+    lines.retain(|line| {
+        let (body, _) = split_eol(line);
+        let trimmed = body.trim();
+
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            in_section = trimmed[1..trimmed.len() - 1].trim() == section;
+            return true;
+        }
+
+        if !in_section || trimmed.is_empty() || trimmed.starts_with(';') || trimmed.starts_with('#') {
+            return true;
+        }
+
+        let Some((name, _)) = body.split_once('=') else {
+            return true;
+        };
+
+        name.trim() != key
+    });
+
+    lines.concat()
 }
 
 fn split_eol(value: &str) -> (&str, &str) {
