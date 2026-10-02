@@ -20,8 +20,7 @@ fn bios_image() -> &'static str {
         .filter(|value| !value.trim().is_empty())
         .map(|_| PS2_BIOS_ASSET_KEY)
         .or_else(|| {
-            option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY")
-                .filter(|key| !key.trim().is_empty())
+            option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY").filter(|key| !key.trim().is_empty())
         })
         .unwrap_or(PS2_BIOS_IMAGE)
 }
