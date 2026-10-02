@@ -109,6 +109,15 @@ impl FormState {
 
 type StepResult = (&'static str, Result<(), String>);
 
+fn project_discord_client_id() -> Option<&'static str> {
+    option_env!("PCSX2_DISCORD_CLIENT_ID")
+        .filter(|value| !value.trim().is_empty())
+}
+
+fn discord_configured(form: &FormState) -> bool {
+    !form.client_id.trim().is_empty() || project_discord_client_id().is_some()
+}
+
 /// Save the configuration, apply the startup choice and (re)start the
 /// background helper. Runs off the UI thread; each step reports separately.
 fn apply_setup(form: &FormState) -> Vec<StepResult> {
@@ -240,14 +249,10 @@ impl Wizard {
             Page::Welcome => {
                 self.page = if self.form.pcsx2_path.trim().is_empty() {
                     Page::Pcsx2
-                } else if self.form.client_id.trim().is_empty()
-                    && option_env!("PCSX2_DISCORD_CLIENT_ID")
-                        .unwrap_or("")
-                        .is_empty()
-                {
-                    Page::Discord
-                } else {
+                } else if discord_configured(&self.form) {
                     Page::Review
+                } else {
+                    Page::Discord
                 };
             }
             Page::Pcsx2 => {
@@ -276,7 +281,13 @@ impl Wizard {
             Page::Pcsx2 => Page::Welcome,
             Page::Pine => Page::Pcsx2,
             Page::Discord => Page::Pine,
-            Page::Review => Page::Discord,
+            Page::Review => {
+                if discord_configured(&self.form) {
+                    Page::Pcsx2
+                } else {
+                    Page::Discord
+                }
+            },
             Page::Finished => Page::Finished,
         };
     }
@@ -451,8 +462,12 @@ fn wizard_welcome(ui: &mut egui::Ui) {
     ui.label(egui::RichText::new("You will need:").strong());
     ui.add_space(4.0);
     ui.label("  -  Your PCSX2 installation (the pcsx2-qt.exe file)");
-    ui.label("  -  A Discord application ID (unless the project provides one)");
-    ui.label("The PCSX2 integration is configured automatically when setup finishes.");
+    if project_discord_client_id().is_some() {
+        ui.label("The PCSX2 integration and Discord connection are configured automatically.");
+    } else {
+        ui.label("  -  A Discord application ID (for development builds)");
+        ui.label("The PCSX2 integration is configured automatically when setup finishes.");
+    }
     ui.add_space(10.0);
     ui.label("Everything can be changed later from the settings window.");
 }
@@ -494,14 +509,7 @@ impl Wizard {
 
     fn page_pine(&mut self, ui: &mut egui::Ui) {
         ui.label(
-            "The helper uses PCSX2's built-in PINE interface. Normal setup configures it automatically.",
-        );
-        ui.add_space(6.0);
-        ui.label(
-            egui::RichText::new(
-                "Nothing needs to be changed in PCSX2 for normal setup. The helper enables                  the PINE interface and keeps the configured slot automatically.",
-            )
-            .strong(),
+            "Advanced PINE connection settings. Normal setup configures the PCSX2 integration automatically.",
         );
         ui.add_space(10.0);
 
@@ -581,7 +589,11 @@ impl Wizard {
             "PINE",
             &format!("{}:{}", self.form.pine_host, self.form.pine_port),
         );
-        summary_row(ui, "Discord application ID", &self.form.client_id);
+        if project_discord_client_id().is_some() {
+            summary_row(ui, "Discord application", "Project-managed");
+        } else {
+            summary_row(ui, "Discord application ID", &self.form.client_id);
+        }
         ui.add_space(10.0);
 
         ui.checkbox(
