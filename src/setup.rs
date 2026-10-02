@@ -241,13 +241,15 @@ impl Wizard {
                 self.page = if self.form.pcsx2_path.trim().is_empty() {
                     Page::Pcsx2
                 } else if self.form.client_id.trim().is_empty()
-                    && option_env!("PCSX2_DISCORD_CLIENT_ID").unwrap_or("").is_empty()
+                    && option_env!("PCSX2_DISCORD_CLIENT_ID")
+                        .unwrap_or("")
+                        .is_empty()
                 {
                     Page::Discord
                 } else {
                     Page::Review
                 };
-            },
+            }
             Page::Pcsx2 => {
                 match config::validate_pcsx2_path(Path::new(self.form.pcsx2_path.trim())) {
                     Ok(()) => self.page = Page::Pine,
