@@ -15,9 +15,13 @@ const PS2_BIOS_IMAGE: &str =
     "https://wsrv.nl/?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftirodz%2FPCX2-DiscordRichPresence-%2Fmain%2Fassets%2Fbios%2Fps2-bios.png&w=1024&h=1024&fit=contain&output=png&q=100&maxage=604800";
 
 fn bios_image() -> &'static str {
-    option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY")
+    if let Some(key) = option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY")
         .filter(|key| !key.trim().is_empty())
-        .unwrap_or(PS2_BIOS_IMAGE)
+    {
+        return key;
+    }
+
+    PS2_BIOS_IMAGE
 }
 
 /// How long a published activity is considered fresh before it is sent

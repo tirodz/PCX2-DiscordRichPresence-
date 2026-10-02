@@ -16,6 +16,7 @@ jobs:
     runs-on: windows-latest
     env:
       PCSX2_DISCORD_CLIENT_ID: ${{ secrets.PCSX2_DISCORD_CLIENT_ID }}
+      PCSX2_DISCORD_BIOS_ASSET_KEY: ${{ secrets.PCSX2_DISCORD_BIOS_ASSET_KEY }}
 
     steps:
       - name: Checkout
@@ -43,6 +44,9 @@ jobs:
         run: |
           if ([string]::IsNullOrWhiteSpace($env:PCSX2_DISCORD_CLIENT_ID)) {
             throw "PCSX2_DISCORD_CLIENT_ID is not configured. Set the project Discord application ID as a repository Actions secret before publishing a public release."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:PCSX2_DISCORD_BIOS_ASSET_KEY)) {
+            throw "PCSX2_DISCORD_BIOS_ASSET_KEY is not configured. Upload the PS2 BIOS artwork to the project Discord application and set its asset key as a repository Actions secret before publishing a public release."
           }
 
       - name: Rust
