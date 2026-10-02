@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+The v0.1.1 changes below are prepared in `main` but are not considered released until the Windows CI/release workflow succeeds and the installer, portable ZIP, and checksums are attached to the GitHub Release. Before publishing, verify that the `ps2-bios` asset is registered in the project Discord application.
+
 ## 0.1.1 - 2026-10-02
 
 - Use the project PlayStation 2 artwork for the BIOS/system-menu presence.
