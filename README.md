@@ -25,7 +25,8 @@ reset it, closing the game does.
 - Windows 10 or 11 (64-bit)
 - PCSX2 2.x (any recent Qt build, installed or portable)
 - The Discord desktop app
-- A Discord application ID (free, takes a minute - see below)
+- The Discord desktop app
+- A Discord application ID only for self-built releases when the project ID is not supplied
 
 ## Installation
 
@@ -38,32 +39,21 @@ Download the latest release from the
 
 The installer does not need administrator rights. It puts the app in your user
 profile, adds a Start Menu entry, and offers to run the setup wizard when it
-finishes. During setup, the app also disables PCSX2's own Discord presence so
+finishes. Public builds can carry the project's Discord application ID so normal
+users do not have to visit the Discord Developer Portal. During setup, the app also disables PCSX2's own Discord presence so
 the custom activity is the only one being published. The original PCSX2 setting
 is restored when you uninstall.
 
 ## First-run setup
 
-The setup wizard opens the first time you run the app (or any time with
-`--setup`):
+The public release is designed to keep setup simple:
 
-1. **PCSX2 location** - browse to your PCSX2 executable, usually
-   `pcsx2-qt.exe`. Installed and portable versions both work. The app checks
-   that the file you picked really looks like PCSX2.
-2. **PCSX2 integration** - the helper enables PINE automatically and uses the
-   local PCSX2 slot already configured, falling back to `28011`. Normal users
-   no longer need to hunt through Advanced settings for PINE.
-3. **Discord application** - Discord shows rich presence for an application
-   ID. Create your own at
-   [discord.com/developers/applications](https://discord.com/developers/applications):
-   *New Application*, name it whatever you like (e.g. "PCSX2"), and copy the
-   **Application ID** from the General Information page. This is a public
-   identifier, not your password or token.
-4. **Confirm** - choose whether the helper should start with Windows and start
-   right away.
+1. **PCSX2 location** - the app tries to detect PCSX2 automatically. If it cannot find it, browse to `pcsx2-qt.exe` once.
+2. **PCSX2 integration** - the app configures the required PINE settings automatically and preserves the previous PCSX2 values for uninstall.
+3. **Discord** - public builds can use the project's application ID automatically. Self-built binaries can provide `PCSX2_DISCORD_CLIENT_ID` at build time.
+4. **Confirm** - choose whether the helper should start with Windows and start right away.
 
-Everything is stored in `config.toml` next to the executable and can be
-changed later: run the app again to open the settings window.
+Normal users do not need to know the PINE port or open PCSX2's Advanced settings. Advanced PINE and Discord fields remain available in the settings window for troubleshooting.
 
 ## Everyday use
 
@@ -92,9 +82,7 @@ the text presence - the PCSX2 logo is used as a fallback.
 ## Validation status
 
 The project has automated PINE, state, cover-cache, timestamp and packaging checks.
-The remaining release check is a live Windows session with PCSX2 and the Discord
-desktop app, including visual verification of the PS2 BIOS artwork and game cover
-in the Rich Presence card.
+The remaining release check is a live Windows session with PCSX2 and Discord, including visual verification of the PS2 BIOS artwork and game-cover framing in the Rich Presence card.
 
 ## Troubleshooting
 
@@ -103,9 +91,8 @@ The helper writes `helper.log` next to the executable - look there first.
 - **Nothing shows in Discord.** Make sure the Discord desktop app is running
   (the browser version can't show rich presence), and that *Activity Privacy ->
   Share your detected activities* is enabled in Discord's settings.
-- **"Could not connect" in the PINE test.** PCSX2 must be running and PINE
-  must be enabled under Settings -> Advanced. If you changed the PINE slot in
-  PCSX2, use the same number in the settings window.
+- **PINE is not detected.** Restart PCSX2 after a fresh setup if it was already open.
+  Advanced PINE host/slot fields remain available in Settings for troubleshooting.
 - **Wrong or missing cover.** The cover database is keyed by serial; some
   releases (homebrew, prototypes, some betas) have no entry. The game title
   and timer still work.

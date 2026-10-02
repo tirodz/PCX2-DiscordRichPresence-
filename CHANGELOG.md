@@ -2,19 +2,21 @@
 
 ## Unreleased
 
+- Fix BIOS artwork delivery by using a Discord-compatible square media path and an optional registered asset-key override.
+- Keep the supplied PS2 BIOS artwork under `assets/bios/ps2-bios.png`.
+- Simplify the normal setup path so PINE is configured automatically.
+- Keep the project Discord application ID as the public-build path, with manual configuration available for self-builds.
+- Keep the cover pipeline at 1024px smart-square output and document the current architecture accurately.
+
 ## 0.1.1 - 2026-10-02
 
 - Use the project PlayStation 2 artwork for the BIOS/system-menu presence.
-- Release validation is complete on Windows CI.- Improve portrait game-cover framing with a smart square crop.
+- Improve portrait game-cover framing with a smart square crop.
 - Configure PCSX2 PINE automatically during setup and restore the previous settings on uninstall.
 - Detect common PCSX2 installation locations automatically.
 - Shorten the normal first-run flow by removing manual PINE configuration from the main path.
-- Add a build-time hook for a future project-owned Discord application ID.
-
-- Refine the PlayStation 2 BIOS/system-menu artwork and Discord presentation.
-- Investigate improved cover framing so portrait PS2 covers use Discord's square image area more effectively.
-- Longer-term direction: reduce setup to a simple install-and-run experience, hiding PINE and Discord application configuration from normal users where technically possible.
-- Longer-term direction: evaluate a native PCSX2 integration instead of requiring a separate companion.
+- Add a build-time hook for a project-owned Discord application ID.
+- Add the MIT license and structured project changelog.
 
 ## 0.1.0 - 2026-10-01
 

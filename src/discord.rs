@@ -12,7 +12,7 @@ use crate::state::{unix_now, RuntimeState};
 const PCSX2_LOGO: &str =
     "https://raw.githubusercontent.com/PCSX2/pcsx2/master/bin/resources/icons/AppIconLarge.png";
 const PS2_BIOS_IMAGE: &str =
-    "https://wsrv.nl/?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftirodz%2FPCX2-DiscordRichPresence-%2Fmain%2Fassets%2Fbios%2Fps2-bios.png&w=1024&h=1024&fit=cover&output=png&q=100&maxage=604800";
+    "https://wsrv.nl/?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftirodz%2FPCX2-DiscordRichPresence-%2Fmain%2Fassets%2Fbios%2Fps2-bios.png&w=1024&h=1024&fit=contain&output=png&q=100&maxage=604800";
 
 fn bios_image() -> &'static str {
     option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY")
@@ -286,7 +286,8 @@ mod tests {
         assert!(PS2_BIOS_IMAGE.contains("ps2-bios.png"));
         assert!(PS2_BIOS_IMAGE.contains("w=1024"));
         assert!(PS2_BIOS_IMAGE.contains("h=1024"));
-        assert!(PS2_BIOS_IMAGE.contains("fit=cover"));
+        assert!(PS2_BIOS_IMAGE.contains("fit=contain"));
+        assert!(PS2_BIOS_IMAGE.len() <= 300);
     }
 
     #[test]

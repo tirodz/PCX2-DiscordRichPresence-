@@ -38,6 +38,13 @@ jobs:
           }
           "version=$version" >> $env:GITHUB_OUTPUT
 
+      - name: Verify public Discord configuration
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:PCSX2_DISCORD_CLIENT_ID)) {
+            throw "PCSX2_DISCORD_CLIENT_ID is not configured. Set the project Discord application ID as a repository Actions secret before publishing a public release."
+          }
+
       - name: Rust
         uses: dtolnay/rust-toolchain@stable
         with:

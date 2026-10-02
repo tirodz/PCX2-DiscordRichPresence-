@@ -57,11 +57,9 @@ timestamp; leaving to the menu or closing PCSX2 ends the session.
 
 Game covers are resolved by serial through the xlenore PS2 cover repository.
 Serials are normalized to the `ABCD-12345` form first. The source cover is
-cached locally, while Discord receives a public 512x512 rendition through
-wsrv.nl with aspect-ratio-preserving contain/letterboxing so portrait box art
-does not get cropped by Discord's square large-image presentation. Serials
-without a cover get a `.missing` marker (valid for a week) so they are not
-re-requested on every refresh.
+cached locally, while Discord receives a public 1024x1024 smart square rendition
+through wsrv.nl using an attention-focused crop. Serials without a cover get a
+`.missing` marker (valid for a week) so they are not re-requested on every refresh.
 
 A missing cover never prevents the text presence from being published; the
 PCSX2 logo is the fallback artwork.
@@ -69,11 +67,20 @@ PCSX2 logo is the fallback artwork.
 ## Configuration and setup
 
 Configuration lives in `config.toml` next to the executable: the PCSX2
-executable path, the PINE host/slot, the Discord application ID, and the poll
-intervals. The first-run wizard collects these interactively (validating the
-PCSX2 path and the application ID, and optionally testing the PINE
-connection), writes the config, registers startup, and launches the helper.
-The settings window edits the same fields later.
+executable path, PINE host/slot, an optional Discord application ID override,
+and the poll intervals. The setup path auto-detects PCSX2 where possible and
+configures PINE automatically. Public release builds can provide a project
+Discord application ID at build time; self-builds can set
+`PCSX2_DISCORD_CLIENT_ID`. The settings window keeps technical fields available
+for troubleshooting.
+
+## BIOS artwork
+
+The PS2 BIOS/system-menu presence uses the project artwork stored at
+`assets/bios/ps2-bios.png`. Discord receives it through the same public media
+proxy used by dynamic game covers, preserving the full supplied artwork inside
+the square presence area. A build may optionally provide a registered Discord
+asset key with `PCSX2_DISCORD_BIOS_ASSET_KEY`.
 
 ## Built-in Discord presence
 
