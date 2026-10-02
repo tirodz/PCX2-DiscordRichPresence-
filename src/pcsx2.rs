@@ -617,6 +617,20 @@ mod tests {
     }
 
     #[test]
+    #[test]
+    fn pine_settings_can_be_added_and_removed() {
+        let original = "[EmuCore]\nOther = 1\n";
+        let enabled = set_setting(original, SECTION, PINE_ENABLE_KEY, "true");
+        let enabled = set_setting(&enabled, SECTION, PINE_SLOT_KEY, "28011");
+
+        assert!(enabled.contains("EnablePINE = true"));
+        assert!(enabled.contains("PINESlot = 28011"));
+
+        let restored = remove_setting(&enabled, SECTION, PINE_ENABLE_KEY);
+        let restored = remove_setting(&restored, SECTION, PINE_SLOT_KEY);
+        assert_eq!(restored, original);
+    }
+
     fn fingerprint_changes_when_the_config_changes() {
         let original = "[EmuCore]\nEnableDiscordPresence = false\n";
         let changed = "[EmuCore]\nEnableDiscordPresence = true\n";
