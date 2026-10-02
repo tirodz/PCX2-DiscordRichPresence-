@@ -158,7 +158,11 @@ pub fn detect_pcsx2_path() -> Option<PathBuf> {
     if let Some(user_profile) = std::env::var_os("USERPROFILE") {
         let profile = PathBuf::from(user_profile);
         for channel in ["pcsx2", "pcsx2-dev"] {
-            let root = profile.join("scoop").join("apps").join(channel).join("current");
+            let root = profile
+                .join("scoop")
+                .join("apps")
+                .join(channel)
+                .join("current");
             candidates.push(root.join("pcsx2-qt.exe"));
             candidates.push(root.join("pcsx2.exe"));
         }
