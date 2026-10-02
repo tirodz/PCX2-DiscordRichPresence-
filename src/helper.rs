@@ -26,7 +26,12 @@ pub fn run() -> Result<()> {
     autostart::clear_stop_request()?;
 
     let config = Config::load_or_create()?;
-    if config.discord.client_id.trim().is_empty() {
+    let client_id = if config.discord.client_id.trim().is_empty() {
+        option_env!("PCSX2_DISCORD_CLIENT_ID").unwrap_or("").to_string()
+    } else {
+        config.discord.client_id.clone()
+    };
+    if client_id.trim().is_empty() {
         logging::info("no Discord application configured yet; run the setup wizard first");
         return Ok(());
     }
@@ -42,7 +47,7 @@ pub fn run() -> Result<()> {
     autostart::write_pid()?;
 
     let covers = CoverCache::new()?;
-    let mut discord = DiscordPublisher::new(config.discord.client_id.clone());
+    let mut discord = DiscordPublisher::new(client_id);
     let mut pine: Option<PineClient> = None;
     let mut failures = 0u32;
     let mut had_presence = false;
