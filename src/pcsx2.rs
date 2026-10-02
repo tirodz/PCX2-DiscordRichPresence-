@@ -28,8 +28,6 @@ struct PineBackup {
     modified_fingerprint: u64,
 }
 
-
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Backup {
     config_path: String,
