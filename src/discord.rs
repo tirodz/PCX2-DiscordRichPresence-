@@ -13,15 +13,17 @@ const PCSX2_LOGO: &str =
     "https://raw.githubusercontent.com/PCSX2/pcsx2/master/bin/resources/icons/AppIconLarge.png";
 const PS2_BIOS_IMAGE: &str =
     "https://wsrv.nl/?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftirodz%2FPCX2-DiscordRichPresence-%2Fmain%2Fassets%2Fbios%2Fps2-bios.png&w=1024&h=1024&fit=contain&output=png&q=100&maxage=604800";
+const PS2_BIOS_ASSET_KEY: &str = "ps2-bios";
 
 fn bios_image() -> &'static str {
-    if let Some(key) = option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY")
-        .filter(|key| !key.trim().is_empty())
-    {
-        return key;
-    }
-
-    PS2_BIOS_IMAGE
+    option_env!("PCSX2_DISCORD_CLIENT_ID")
+        .filter(|value| !value.trim().is_empty())
+        .map(|_| PS2_BIOS_ASSET_KEY)
+        .or_else(|| {
+            option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY")
+                .filter(|key| !key.trim().is_empty())
+        })
+        .unwrap_or(PS2_BIOS_IMAGE)
 }
 
 /// How long a published activity is considered fresh before it is sent
@@ -292,6 +294,11 @@ mod tests {
         assert!(PS2_BIOS_IMAGE.contains("h=1024"));
         assert!(PS2_BIOS_IMAGE.contains("fit=contain"));
         assert!(PS2_BIOS_IMAGE.len() <= 300);
+    }
+
+    #[test]
+    fn public_build_uses_registered_bios_asset_key() {
+        assert_eq!(PS2_BIOS_ASSET_KEY, "ps2-bios");
     }
 
     #[test]

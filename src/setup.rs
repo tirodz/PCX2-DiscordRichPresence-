@@ -78,10 +78,10 @@ impl FormState {
             },
             pine_host: config.pine.host.clone(),
             pine_port: config.pine.port.to_string(),
-            client_id: if config.discord.client_id.trim().is_empty() {
-                option_env!("PCSX2_DISCORD_CLIENT_ID")
-                    .unwrap_or("")
-                    .to_string()
+            client_id: if let Some(id) = project_discord_client_id() {
+                id.to_string()
+            } else if config.discord.client_id.trim().is_empty() {
+                String::new()
             } else {
                 config.discord.client_id.clone()
             },

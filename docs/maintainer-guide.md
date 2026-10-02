@@ -51,7 +51,7 @@ Do not broaden this to unrelated PCSX2 settings.
 
 Public releases are intended to use one project-owned Discord application ID supplied at build time through PCSX2_DISCORD_CLIENT_ID.
 
-Upload the supplied PS2 BIOS artwork to that Discord application's Rich Presence assets with the key configured in PCSX2_DISCORD_BIOS_ASSET_KEY. Public releases then use the registered asset instead of asking Discord to fetch the BIOS image from a public URL.
+Upload the supplied PS2 BIOS artwork to that Discord application's Rich Presence assets with the key `ps2-bios`. Public releases then use the registered asset instead of asking Discord to fetch the BIOS image from a public URL.
 
 Never ship a public release that silently falls back to asking every user to create a Discord Developer Application.
 
