@@ -82,6 +82,8 @@ the text presence - the PCSX2 logo is used as a fallback.
 
 The project has automated PINE, state, cover-cache, timestamp, configuration, and packaging checks. A live Windows session with PCSX2 and Discord is still required to visually verify the PS2 BIOS artwork and game-cover framing in the Rich Presence card.
 
+Public release builds use the project's Discord application ID supplied through the `PCSX2_DISCORD_CLIENT_ID` GitHub Actions secret. The `ps2-bios` image key must also exist in that Discord application's registered Rich Presence assets; a repository PNG or public image URL does not automatically register an asset with Discord. If the registered asset is missing or named differently, Discord may show a question-mark placeholder. Verify the asset in the Discord Developer Portal before publishing a release.
+
 ## Troubleshooting
 
 The helper writes `helper.log` next to the executable - look there first.
@@ -104,9 +106,10 @@ The helper writes `helper.log` next to the executable - look there first.
 ## Uninstalling
 
 Use *Add or Remove Programs* or the Start Menu uninstall entry. This stops the
-background helper, removes the startup registration, and deletes the app's
-files and its configuration. Your PCSX2 installation and its settings are
-never touched.
+background helper, removes the startup registration, and removes the app's
+files and configuration. The app attempts to restore the PCSX2 PINE and built-in
+Discord settings it changed, while preserving later manual edits to PCSX2's
+configuration. Your PCSX2 installation itself is not removed.
 
 ## Building from source
 
