@@ -2,12 +2,18 @@
 
 ## Unreleased
 
-The v0.1.1 changes below are prepared in `main` but are not considered released until Windows CI passes and the installer, portable ZIP, and checksums are attached to the GitHub Release. Publishing is gated by the release workflow, including confirmation that the `ps2-bios` asset was verified in the project Discord application.
+The next release changes below are prepared in `main` but are not considered released until Windows CI passes and the installer, portable ZIP, and checksums are attached to the GitHub Release.
+
+## 0.1.2 - 2026-10-02
+
+- Fix BIOS/system-menu artwork by using Discord's supported external Rich Presence image URL path by default.
+- Remove the public-build dependency on a separately uploaded `ps2-bios` Discord Developer Portal asset.
+- Keep an explicit `PCSX2_DISCORD_BIOS_ASSET_KEY` override available for self-built/custom deployments.
 
 ## 0.1.1 - 2026-10-02
 
 - Use the project PlayStation 2 artwork for the BIOS/system-menu presence.
-- Prefer the registered BIOS asset key in public builds, honor a configured asset-key override, and retain a public-image fallback for self-built binaries.
+- Use the project-hosted BIOS artwork through Discord's external image support, with an optional configured asset-key override.
 - Improve portrait game-cover framing with a 1024px smart square crop.
 - Configure PCSX2 PINE automatically during setup and restore the previous settings on uninstall.
 - Detect common PCSX2 installation locations automatically.
