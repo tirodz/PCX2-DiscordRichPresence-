@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -10,6 +12,7 @@ permissions:
 
 jobs:
   windows:
+    if: github.ref_type == 'tag' || (github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, '[publish-'))
     runs-on: windows-latest
     timeout-minutes: 30
     env:
@@ -23,10 +26,18 @@ jobs:
       - name: Release metadata
         id: meta
         shell: pwsh
+        env:
+          RELEASE_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          $version = $env:GITHUB_REF_NAME
+          if ($env:GITHUB_REF_TYPE -eq "tag") {
+            $version = $env:GITHUB_REF_NAME
+          } elseif ($env:RELEASE_COMMIT_MESSAGE -match '^\[publish-(v[0-9]+\.[0-9]+\.[0-9]+)\]') {
+            $version = $Matches[1]
+          } else {
+            throw "For a branch-triggered release, the commit message must start with [publish-vX.Y.Z]."
+          }
           if ($version -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
-            throw "Release tags must use semantic version format, for example v0.1.1."
+            throw "Release versions must use semantic version format, for example v0.1.1."
           }
           "version=$version" >> $env:GITHUB_OUTPUT
 
