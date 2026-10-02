@@ -82,7 +82,7 @@ the text presence - the PCSX2 logo is used as a fallback.
 
 The project has automated PINE, state, cover-cache, timestamp, configuration, and packaging checks. A live Windows session with PCSX2 and Discord is still required to visually verify the PS2 BIOS artwork and game-cover framing in the Rich Presence card.
 
-Public release builds use the project's Discord application ID supplied through the `PCSX2_DISCORD_CLIENT_ID` GitHub Actions secret. The `ps2-bios` image key must also exist in that Discord application's registered Rich Presence assets; a repository PNG or public image URL does not automatically register an asset with Discord. If the registered asset is missing or named differently, Discord may show a question-mark placeholder. Verify the asset in the Discord Developer Portal before publishing a release.
+Public release builds use the project's Discord application ID supplied through the `PCSX2_DISCORD_CLIENT_ID` GitHub Actions secret. The `ps2-bios` image key must exist in that Discord application's registered Rich Presence assets; a repository PNG does not register an asset with Discord. If you use a different registered key, set the optional `PCSX2_DISCORD_BIOS_ASSET_KEY` Actions secret to that exact key. Before publishing, verify the asset in the Discord Developer Portal and set `PCSX2_DISCORD_BIOS_ASSET_VERIFIED` to `yes`; the release workflow intentionally stops if this confirmation is missing. A live Windows session is still needed to confirm the final artwork renders correctly in Discord.
 
 ## Troubleshooting
 
