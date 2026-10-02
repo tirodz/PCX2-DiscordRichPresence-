@@ -124,7 +124,9 @@ impl Config {
     /// Setup is considered complete once both the PCSX2 executable and the
     /// Discord application ID are known.
     pub fn is_configured(&self) -> bool {
-        !self.pcsx2.exe_path.trim().is_empty() && !self.discord.client_id.trim().is_empty()
+        !self.pcsx2.exe_path.trim().is_empty()
+            && (!self.discord.client_id.trim().is_empty()
+                || !option_env!("PCSX2_DISCORD_CLIENT_ID").unwrap_or("").trim().is_empty())
     }
 }
 
