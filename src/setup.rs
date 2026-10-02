@@ -256,7 +256,13 @@ impl Wizard {
             }
             Page::Pcsx2 => {
                 match config::validate_pcsx2_path(Path::new(self.form.pcsx2_path.trim())) {
-                    Ok(()) => self.page = Page::Pine,
+                    Ok(()) => {
+                        self.page = if discord_configured(&self.form) {
+                            Page::Review
+                        } else {
+                            Page::Discord
+                        };
+                    }
                     Err(error) => self.error = Some(error),
                 }
             }
