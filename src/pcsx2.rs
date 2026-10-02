@@ -165,7 +165,11 @@ pub fn configure_pine(executable: &Path) -> Result<u16> {
             backup.original_exists,
         )
     } else {
-        (current_enable.clone(), current_slot.clone(), original_exists)
+        (
+            current_enable.clone(),
+            current_slot.clone(),
+            original_exists,
+        )
     };
 
     let slot = current_slot
@@ -525,7 +529,11 @@ fn remove_setting(text: &str, section: &str, key: &str) -> String {
             return true;
         }
 
-        if !in_section || trimmed.is_empty() || trimmed.starts_with(';') || trimmed.starts_with('#') {
+        if !in_section
+            || trimmed.is_empty()
+            || trimmed.starts_with(';')
+            || trimmed.starts_with('#')
+        {
             return true;
         }
 
