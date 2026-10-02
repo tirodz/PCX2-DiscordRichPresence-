@@ -23,6 +23,9 @@ fn main() -> Result<()> {
             autostart::clear_stop_request()?;
         }
         Some("--uninstall") => {
+            if let Err(error) = pcsx2::restore_pine() {
+                logging::error(&format!("could not restore PCSX2 PINE setting: {error:#}"));
+            }
             if let Err(error) = pcsx2::restore_builtin_discord() {
                 logging::error(&format!(
                     "could not restore PCSX2 Discord presence setting: {error:#}"
