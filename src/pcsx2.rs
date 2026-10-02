@@ -628,8 +628,8 @@ mod tests {
         assert!(enabled.contains("EnablePINE = true"));
         assert!(enabled.contains("PINESlot = 28011"));
 
-        let restored = remove_setting(&enabled, super::SECTION, super::PINE_ENABLE_KEY);
-        let restored = remove_setting(&restored, super::SECTION, super::PINE_SLOT_KEY);
+        let restored = super::remove_setting(&enabled, super::SECTION, super::PINE_ENABLE_KEY);
+        let restored = super::remove_setting(&restored, super::SECTION, super::PINE_SLOT_KEY);
         assert_eq!(restored, original);
     }
 
