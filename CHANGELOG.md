@@ -7,6 +7,7 @@
 - Simplify the normal setup path so PINE is configured automatically.
 - Keep the project Discord application ID as the public-build path, with manual configuration available for self-builds.
 - Keep the cover pipeline at 1024px smart-square output and document the current architecture accurately.
+- Publish the verified Windows build as v0.1.1.
 
 ## 0.1.1 - 2026-10-02
 
