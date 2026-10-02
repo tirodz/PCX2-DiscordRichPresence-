@@ -32,8 +32,8 @@ reset it, closing the game does.
 Download the latest release from the
 [Releases](https://github.com/tirodz/PCX2-DiscordRichPresence-/releases) page:
 
-- **`PCSX2-DiscordRichPresence-v0.1.0-Setup.exe`** - installer (recommended)
-- **`PCSX2-DiscordRichPresence-v0.1.0-windows-x64.zip`** - portable build, just
+- **`PCSX2-DiscordRichPresence-v0.1.1-Setup.exe`** - installer (recommended)
+- **`PCSX2-DiscordRichPresence-v0.1.1-windows-x64.zip`** - portable build, just
   unzip and run
 
 The installer does not need administrator rights. It puts the app in your user
@@ -50,10 +50,9 @@ The setup wizard opens the first time you run the app (or any time with
 1. **PCSX2 location** - browse to your PCSX2 executable, usually
    `pcsx2-qt.exe`. Installed and portable versions both work. The app checks
    that the file you picked really looks like PCSX2.
-2. **PINE connection** - the helper reads the emulator state through PINE.
-   Enable it once in PCSX2 under **Settings -> Advanced -> PINE** and keep the
-   default slot `28011`. The wizard can test the connection while PCSX2 is
-   running.
+2. **PCSX2 integration** - the helper enables PINE automatically and uses the
+   local PCSX2 slot already configured, falling back to `28011`. Normal users
+   no longer need to hunt through Advanced settings for PINE.
 3. **Discord application** - Discord shows rich presence for an application
    ID. Create your own at
    [discord.com/developers/applications](https://discord.com/developers/applications):
@@ -84,9 +83,9 @@ its updated Discord setting is picked up.
 ## Cover artwork
 
 Covers come from the [xlenore/ps2-covers](https://github.com/xlenore/ps2-covers)
-database, matched by the game's serial (SLUS/SCES/SLPS/...). Because Discord renders a Rich Presence large image as a square, the public
-cover URL is wrapped in a **1024 x 1024 square, letterboxed rendition** so
-portrait box art is not cropped. Covers are cached locally, serials without a
+database, matched by the game's serial (SLUS/SCES/SLPS/...). Because Discord renders a Rich Presence large image as a square, covers are
+served as a **1024 x 1024 smart square crop** so portrait box art fills the
+card more naturally without stretching. Covers are cached locally, serials without a
 cover are remembered instead of re-fetched, and a missing cover never breaks
 the text presence - the PCSX2 logo is used as a fallback.
 
@@ -94,8 +93,8 @@ the text presence - the PCSX2 logo is used as a fallback.
 
 The project has automated PINE, state, cover-cache, timestamp and packaging checks.
 The remaining release check is a live Windows session with PCSX2 and the Discord
-desktop app, including visual verification of the game cover in the Rich Presence
-card.
+desktop app, including visual verification of the PS2 BIOS artwork and game cover
+in the Rich Presence card.
 
 ## Troubleshooting
 
