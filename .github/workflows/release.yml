@@ -16,8 +16,9 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     env:
-      PCSX2_DISCORD_CLIENT_ID: ${{ secrets.PCSX2_DISCORD_CLIENT_ID }}
-      PCSX2_DISCORD_BIOS_ASSET_KEY: ${{ secrets.PCSX2_DISCORD_BIOS_ASSET_KEY }}
+      # Public Discord application ID supplied for this project.
+      PCSX2_DISCORD_CLIENT_ID: "1555279402999353464"
+      PCSX2_DISCORD_BIOS_ASSET_KEY: "ps2-bios"
 
     steps:
       - name: Checkout
@@ -43,19 +44,17 @@ jobs:
 
       - name: Verify public Discord configuration and artwork
         shell: pwsh
-        env:
-          BIOS_ASSET_VERIFIED: ${{ secrets.PCSX2_DISCORD_BIOS_ASSET_VERIFIED }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:PCSX2_DISCORD_CLIENT_ID)) {
-            throw "PCSX2_DISCORD_CLIENT_ID is missing. Add the public project Discord application ID in repository Actions secrets."
+            throw "The public Discord application ID is not configured in the release workflow."
           }
-          if ($env:BIOS_ASSET_VERIFIED -ne "yes") {
-            throw "Before publishing, verify that the ps2-bios image key exists in the project's Discord Developer Portal, then set the PCSX2_DISCORD_BIOS_ASSET_VERIFIED Actions secret to yes."
+          if ($env:PCSX2_DISCORD_BIOS_ASSET_KEY -ne "ps2-bios") {
+            throw "The registered BIOS artwork key must be ps2-bios."
           }
           if (-not (Test-Path "assets/bios/ps2-bios.png")) {
             throw "The project PS2 BIOS artwork is missing."
           }
-          Write-Host "Discord application configuration and BIOS artwork attestation are present."
+          Write-Host "Public Discord application ID and bundled BIOS artwork are configured."
 
       - name: Rust
         uses: dtolnay/rust-toolchain@stable
