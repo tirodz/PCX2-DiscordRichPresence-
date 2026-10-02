@@ -292,7 +292,7 @@ impl Wizard {
                 } else {
                     Page::Discord
                 }
-            },
+            }
             Page::Finished => Page::Finished,
         };
     }
