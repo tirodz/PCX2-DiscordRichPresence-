@@ -128,6 +128,50 @@ impl Config {
     }
 }
 
+/// Find a likely PCSX2 executable in common Windows installation locations.
+///
+/// This is intentionally conservative. The setup wizard falls back to the
+/// Browse dialog instead of performing an expensive full-disk search.
+pub fn detect_pcsx2_path() -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+
+    if let Some(program_files) = std::env::var_os("ProgramFiles") {
+        let root = PathBuf::from(program_files).join("PCSX2");
+        candidates.push(root.join("pcsx2-qt.exe"));
+        candidates.push(root.join("pcsx2.exe"));
+    }
+
+    if let Some(program_files_x86) = std::env::var_os("ProgramFiles(x86)") {
+        let root = PathBuf::from(program_files_x86).join("PCSX2");
+        candidates.push(root.join("pcsx2-qt.exe"));
+        candidates.push(root.join("pcsx2.exe"));
+    }
+
+    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+        let root = PathBuf::from(local_app_data).join("Programs").join("PCSX2");
+        candidates.push(root.join("pcsx2-qt.exe"));
+        candidates.push(root.join("pcsx2.exe"));
+    }
+
+    if let Some(user_profile) = std::env::var_os("USERPROFILE") {
+        let profile = PathBuf::from(user_profile);
+        for channel in ["pcsx2", "pcsx2-dev"] {
+            let root = profile.join("scoop").join("apps").join(channel).join("current");
+            candidates.push(root.join("pcsx2-qt.exe"));
+            candidates.push(root.join("pcsx2.exe"));
+        }
+    }
+
+    if let Some(path_var) = std::env::var_os("PATH") {
+        for directory in std::env::split_paths(&path_var) {
+            candidates.push(directory.join("pcsx2-qt.exe"));
+            candidates.push(directory.join("pcsx2.exe"));
+        }
+    }
+
+    candidates.into_iter().find(|path| path.is_file())
+}
+
 /// Check that a selected file plausibly is the PCSX2 executable.
 ///
 /// The file must exist and its name must look like a PCSX2 build, which
