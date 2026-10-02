@@ -243,6 +243,7 @@ mod tests {
     fn caches_hits_and_misses() {
         let (base, _server) = spawn_cover_server();
         let dir = std::env::temp_dir().join(format!("pcsx2-rp-covers-{}", std::process::id()));
+        std::fs::remove_dir_all(&dir).ok();
         std::fs::create_dir_all(&dir).unwrap();
         let cache = CoverCache::with_root(dir.clone()).unwrap();
 
