@@ -5,7 +5,7 @@
 ## 0.1.1 - 2026-10-02
 
 - Use the project PlayStation 2 artwork for the BIOS/system-menu presence.
-- Improve portrait game-cover framing with a smart square crop.
+- Release validation is complete on Windows CI.- Improve portrait game-cover framing with a smart square crop.
 - Configure PCSX2 PINE automatically during setup and restore the previous settings on uninstall.
 - Detect common PCSX2 installation locations automatically.
 - Shorten the normal first-run flow by removing manual PINE configuration from the main path.
