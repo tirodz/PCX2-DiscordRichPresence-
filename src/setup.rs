@@ -78,7 +78,13 @@ impl FormState {
             },
             pine_host: config.pine.host.clone(),
             pine_port: config.pine.port.to_string(),
-            client_id: config.discord.client_id.clone(),
+            client_id: if config.discord.client_id.trim().is_empty() {
+                option_env!("PCSX2_DISCORD_CLIENT_ID")
+                    .unwrap_or("")
+                    .to_string()
+            } else {
+                config.discord.client_id.clone()
+            },
             autostart: autostart::installed().unwrap_or(false),
             start_helper: true,
         }
