@@ -110,8 +110,7 @@ impl FormState {
 type StepResult = (&'static str, Result<(), String>);
 
 fn project_discord_client_id() -> Option<&'static str> {
-    option_env!("PCSX2_DISCORD_CLIENT_ID")
-        .filter(|value| !value.trim().is_empty())
+    option_env!("PCSX2_DISCORD_CLIENT_ID").filter(|value| !value.trim().is_empty())
 }
 
 fn discord_configured(form: &FormState) -> bool {
