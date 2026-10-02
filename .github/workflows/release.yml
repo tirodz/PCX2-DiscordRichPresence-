@@ -4,18 +4,17 @@ on:
   push:
     tags:
       - "v*"
-    branches:
-      - main
 
 permissions:
   contents: write
 
 jobs:
   windows:
-    if: github.ref_type == 'tag' || (github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, '[publish-'))
     runs-on: windows-latest
+    timeout-minutes: 30
     env:
       PCSX2_DISCORD_CLIENT_ID: ${{ secrets.PCSX2_DISCORD_CLIENT_ID }}
+      PCSX2_DISCORD_BIOS_ASSET_KEY: ${{ secrets.PCSX2_DISCORD_BIOS_ASSET_KEY }}
 
     steps:
       - name: Checkout
@@ -24,27 +23,28 @@ jobs:
       - name: Release metadata
         id: meta
         shell: pwsh
-        env:
-          RELEASE_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          if ($env:GITHUB_REF_TYPE -eq "tag") {
-            $version = $env:GITHUB_REF_NAME
-          } else {
-            $match = [regex]::Match($env:RELEASE_MESSAGE, '\[publish-(v[0-9]+\.[0-9]+\.[0-9]+)\]')
-            if (-not $match.Success) {
-              throw "Release marker not found in commit message."
-            }
-            $version = $match.Groups[1].Value
+          $version = $env:GITHUB_REF_NAME
+          if ($version -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "Release tags must use semantic version format, for example v0.1.1."
           }
           "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Verify public Discord configuration
+      - name: Verify public Discord configuration and artwork
         shell: pwsh
+        env:
+          BIOS_ASSET_VERIFIED: ${{ secrets.PCSX2_DISCORD_BIOS_ASSET_VERIFIED }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:PCSX2_DISCORD_CLIENT_ID)) {
-            throw "PCSX2_DISCORD_CLIENT_ID is not configured. Set the project Discord application ID as a repository Actions secret before publishing a public release."
+            throw "PCSX2_DISCORD_CLIENT_ID is missing. Add the public project Discord application ID in repository Actions secrets."
           }
-          Write-Host "Using registered Discord BIOS asset key: ps2-bios"
+          if ($env:BIOS_ASSET_VERIFIED -ne "yes") {
+            throw "Before publishing, verify that the ps2-bios image key exists in the project's Discord Developer Portal, then set the PCSX2_DISCORD_BIOS_ASSET_VERIFIED Actions secret to yes."
+          }
+          if (-not (Test-Path "assets/bios/ps2-bios.png")) {
+            throw "The project PS2 BIOS artwork is missing."
+          }
+          Write-Host "Discord application configuration and BIOS artwork attestation are present."
 
       - name: Rust
         uses: dtolnay/rust-toolchain@stable
@@ -85,6 +85,12 @@ jobs:
           }
 
           & $iscc installer.iss
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup failed with exit code $LASTEXITCODE."
+          }
+          if (-not (Test-Path "Output/PCSX2-DiscordRichPresence-Setup.exe")) {
+            throw "The installer output was not created."
+          }
 
       - name: Package portable build and checksums
         shell: pwsh
@@ -99,11 +105,24 @@ jobs:
           Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force $stage | Out-Null
 
-          Copy-Item target/release/pcsx2-discord-rich-presence.exe $stage/
+          $exe = "target/release/pcsx2-discord-rich-presence.exe"
+          if (-not (Test-Path $exe)) {
+            throw "The release executable is missing."
+          }
+          Copy-Item $exe $stage/
           Copy-Item README.md $stage/
-          Compress-Archive -Path "$stage\*" -DestinationPath $portable
-
+          Compress-Archive -Path "$stage\*" -DestinationPath $portable -Force
           Copy-Item Output/PCSX2-DiscordRichPresence-Setup.exe $installer
+
+          $zipCheck = Join-Path $PWD "dist-check"
+          Remove-Item $zipCheck -Recurse -Force -ErrorAction SilentlyContinue
+          Expand-Archive -Path $portable -DestinationPath $zipCheck
+          if (-not (Test-Path (Join-Path $zipCheck "pcsx2-discord-rich-presence.exe"))) {
+            throw "The portable ZIP does not contain the application executable."
+          }
+          if ((Get-Item $portable).Length -le 100000 -or (Get-Item $installer).Length -le 100000) {
+            throw "A release package is unexpectedly small; refusing to publish."
+          }
 
           $lines = @(
             (Get-FileHash $portable -Algorithm SHA256).Hash.ToLower() + "  " + $portable
@@ -111,12 +130,36 @@ jobs:
           )
           $lines | Set-Content SHA256SUMS.txt -Encoding ascii
 
+          foreach ($line in Get-Content SHA256SUMS.txt) {
+            $parts = $line -split '\s+', 2
+            if ((Get-FileHash $parts[1] -Algorithm SHA256).Hash.ToLower() -ne $parts[0]) {
+              throw "Checksum verification failed for $($parts[1])."
+            }
+          }
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.version }}
           target_commitish: ${{ github.sha }}
-          generate_release_notes: true
+          name: PCSX2 Discord Rich Presence ${{ steps.meta.outputs.version }}
+          body: |
+            ## What's new
+
+            - Added the project's PlayStation 2 BIOS/system-menu artwork to Rich Presence.
+            - Improved portrait PS2 cover framing with a smart square crop, without stretching the original artwork.
+            - Configured PCSX2 PINE automatically during setup and preserved the prior settings for uninstall.
+            - Added automatic detection for common PCSX2 installation locations.
+            - Simplified first-run setup so normal users no longer need to configure PINE manually.
+            - Improved regression coverage and release-package validation.
+
+            ## Downloads
+
+            - **Setup.exe** — install the app for normal Windows use.
+            - **windows-x64.zip** — portable build.
+            - **SHA256SUMS.txt** — SHA-256 checksums for both downloads.
+
+            The BIOS artwork uses the registered `ps2-bios` Discord Rich Presence asset. A live Windows session with PCSX2 and Discord is still needed to verify the artwork and cover framing visually.
           files: |
             PCSX2-DiscordRichPresence-${{ steps.meta.outputs.version }}-windows-x64.zip
             PCSX2-DiscordRichPresence-${{ steps.meta.outputs.version }}-Setup.exe
