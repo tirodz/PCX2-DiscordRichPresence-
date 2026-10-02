@@ -69,7 +69,13 @@ struct FormState {
 impl FormState {
     fn from_config(config: &Config) -> Self {
         Self {
-            pcsx2_path: config.pcsx2.exe_path.clone(),
+            pcsx2_path: if config.pcsx2.exe_path.trim().is_empty() {
+                config::detect_pcsx2_path()
+                    .map(|path| path.display().to_string())
+                    .unwrap_or_default()
+            } else {
+                config.pcsx2.exe_path.clone()
+            },
             pine_host: config.pine.host.clone(),
             pine_port: config.pine.port.to_string(),
             client_id: config.discord.client_id.clone(),
@@ -118,6 +124,16 @@ fn apply_setup(form: &FormState) -> Vec<StepResult> {
     if results.last().map(|(_, r)| r.is_err()) == Some(true) {
         return results;
     }
+
+    let pine_slot = match pcsx2::configure_pine(Path::new(&config.pcsx2.exe_path)) {
+        Ok(slot) => slot,
+        Err(error) => {
+            results.push(("Configure PCSX2 integration", Err(format!("{error:#}"))));
+            return results;
+        }
+    };
+    let mut config = config;
+    config.pine.port = pine_slot;
 
     results.push((
         "Save the configuration",
@@ -215,7 +231,17 @@ impl Wizard {
     fn next(&mut self) {
         self.error = None;
         match self.page {
-            Page::Welcome => self.page = Page::Pcsx2,
+            Page::Welcome => {
+                self.page = if self.form.pcsx2_path.trim().is_empty() {
+                    Page::Pcsx2
+                } else if self.form.client_id.trim().is_empty()
+                    && option_env!("PCSX2_DISCORD_CLIENT_ID").unwrap_or("").is_empty()
+                {
+                    Page::Discord
+                } else {
+                    Page::Review
+                };
+            },
             Page::Pcsx2 => {
                 match config::validate_pcsx2_path(Path::new(self.form.pcsx2_path.trim())) {
                     Ok(()) => self.page = Page::Pine,
@@ -417,8 +443,8 @@ fn wizard_welcome(ui: &mut egui::Ui) {
     ui.label(egui::RichText::new("You will need:").strong());
     ui.add_space(4.0);
     ui.label("  -  Your PCSX2 installation (the pcsx2-qt.exe file)");
-    ui.label("  -  PINE enabled in PCSX2 (the wizard explains how)");
-    ui.label("  -  A Discord application ID (the wizard explains where to get one)");
+    ui.label("  -  A Discord application ID (unless the project provides one)");
+    ui.label("The PCSX2 integration is configured automatically when setup finishes.");
     ui.add_space(10.0);
     ui.label("Everything can be changed later from the settings window.");
 }
@@ -460,7 +486,7 @@ impl Wizard {
 
     fn page_pine(&mut self, ui: &mut egui::Ui) {
         ui.label(
-            "The helper reads the emulator state through PINE, the interface built into PCSX2.",
+            "The helper uses PCSX2's built-in PINE interface. Normal setup configures it automatically.",
         );
         ui.add_space(6.0);
         ui.label(egui::RichText::new("Enable it once in PCSX2:").strong());
