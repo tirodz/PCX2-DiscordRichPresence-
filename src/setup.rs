@@ -497,11 +497,12 @@ impl Wizard {
             "The helper uses PCSX2's built-in PINE interface. Normal setup configures it automatically.",
         );
         ui.add_space(6.0);
-        ui.label(egui::RichText::new("Enable it once in PCSX2:").strong());
-        ui.label("  1.  Open PCSX2.");
-        ui.label("  2.  Go to Settings > Advanced.");
-        ui.label("  3.  Enable the PINE server.");
-        ui.label("  4.  Keep the slot at 28011 unless you changed it yourself.");
+        ui.label(
+            egui::RichText::new(
+                "Nothing needs to be changed in PCSX2 for normal setup. The helper enables                  the PINE interface and keeps the configured slot automatically.",
+            )
+            .strong(),
+        );
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
