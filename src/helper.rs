@@ -27,7 +27,9 @@ pub fn run() -> Result<()> {
 
     let config = Config::load_or_create()?;
     let client_id = if config.discord.client_id.trim().is_empty() {
-        option_env!("PCSX2_DISCORD_CLIENT_ID").unwrap_or("").to_string()
+        option_env!("PCSX2_DISCORD_CLIENT_ID")
+            .unwrap_or("")
+            .to_string()
     } else {
         config.discord.client_id.clone()
     };
