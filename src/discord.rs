@@ -13,7 +13,12 @@ const PCSX2_LOGO: &str =
     "https://raw.githubusercontent.com/PCSX2/pcsx2/master/bin/resources/icons/AppIconLarge.png";
 const PS2_BIOS_IMAGE: &str =
     "https://wsrv.nl/?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftirodz%2FPCX2-DiscordRichPresence-%2Fmain%2Fassets%2Fbios%2Fps2-bios.png&w=1024&h=1024&fit=cover&output=png&q=100&maxage=604800";
-const PROJECT_BIOS_ASSET_KEY: &str = "ps2-bios";
+
+fn bios_image() -> &'static str {
+    option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY")
+        .filter(|key| !key.trim().is_empty())
+        .unwrap_or(PS2_BIOS_IMAGE)
+}
 
 /// How long a published activity is considered fresh before it is sent
 /// again, and how long to wait before retrying a failed Discord connection.
@@ -170,7 +175,7 @@ impl DiscordPublisher {
                 .small_text("PCSX2")
         } else if matches!(state, RuntimeState::Bios { .. }) {
             Assets::new()
-                .large_image(option_env!("PCSX2_DISCORD_BIOS_ASSET_KEY").unwrap_or(PS2_BIOS_IMAGE))
+                .large_image(bios_image())
                 .large_text("PlayStation 2")
         } else {
             Assets::new().large_image(PCSX2_LOGO).large_text("PCSX2")
@@ -282,11 +287,6 @@ mod tests {
         assert!(PS2_BIOS_IMAGE.contains("w=1024"));
         assert!(PS2_BIOS_IMAGE.contains("h=1024"));
         assert!(PS2_BIOS_IMAGE.contains("fit=cover"));
-    }
-
-    #[test]
-    fn project_bios_asset_key_is_stable() {
-        assert_eq!(PROJECT_BIOS_ASSET_KEY, "ps2-bios");
     }
 
     #[test]
